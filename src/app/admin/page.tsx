@@ -131,7 +131,7 @@ export default function AdminPage() {
                 trades.push({ ...doc.data(), id: doc.id } as Trade);
             });
             // Sort trades by creation time, newest first
-            trades.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+            trades.sort((a, b) => (new Date(b.createdAt).getTime() || 0) - (new Date(a.createdAt).getTime() || 0));
             setAllTrades(trades);
             setIsLoadingTrades(false);
         };
@@ -298,7 +298,7 @@ export default function AdminPage() {
                             <CardHeader>
                                 <CardTitle>Fixtures</CardTitle>
                                 <CardDescription>Fixtures stored in the database.</CardDescription>
-                            </Header>
+                            </CardHeader>
                             <CardContent>
                                <Table>
                                     <TableHeader>
@@ -328,4 +328,5 @@ export default function AdminPage() {
             </div>
         </div>
     );
-}
+
+    
