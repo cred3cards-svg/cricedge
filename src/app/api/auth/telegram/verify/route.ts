@@ -1,17 +1,8 @@
 // /src/app/api/auth/telegram/verify/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createHmac } from 'crypto';
-
-// This is a placeholder for the actual Firebase Admin SDK initialization
-// In a real deployed environment, you'd use firebase-admin
-const mockAdmin = {
-  auth: () => ({
-    createCustomToken: async (uid: string, claims?: object) => {
-      console.log(`Minting custom token for UID: ${uid} with claims:`, claims);
-      return `mock-custom-token-for-${uid}`;
-    },
-  }),
-};
+import { getAdminApp } from '@/firebase/admin';
+import { FieldValue } from 'firebase-admin/firestore';
 
 export async function POST(req: NextRequest) {
   const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
@@ -49,20 +40,53 @@ export async function POST(req: NextRequest) {
 
     // Hash is valid, data is from Telegram
     const user = JSON.parse(params.get('user') || '{}');
-    const telegramId = user.id;
+    const telegramId = user.id.toString();
 
     if (!telegramId) {
         return NextResponse.json({ error: 'User ID not found in Telegram data.' }, { status: 400 });
     }
 
-    // --- Firebase Custom Token Minting ---
-    // In a real app, you would find or create a user in Firebase Auth
-    // and then mint a token for their Firebase UID.
-    // For now, we'll use the Telegram ID as the UID for simplicity.
-    const uid = `telegram:${telegramId}`;
-    const customToken = await mockAdmin.auth().createCustomToken(uid, { telegram_id: telegramId });
+    const admin = getAdminApp();
+    const auth = admin.auth();
+    const db = admin.firestore();
 
-    // TODO: Save/update user profile in Firestore `telegramProfiles/{telegramId}`
+    const telegramProfileRef = db.collection('telegramProfiles').doc(telegramId);
+    const userProfileRef = db.collection('users').doc(); // Will be set later if user is new
+    
+    let uid: string;
+    
+    const telegramProfileSnap = await telegramProfileRef.get();
+
+    if (telegramProfileSnap.exists) {
+        uid = telegramProfileSnap.data()!.uid;
+    } else {
+        // User is new, create a new Firebase user and link it.
+        uid = userProfileRef.id;
+        const newUserRecord = {
+            email: `${telegramId}@telegram.user`,
+            handle: user.username || `tg_${telegramId}`,
+            role: 'user',
+            createdAt: FieldValue.serverTimestamp(),
+        };
+
+        const newTelegramProfile = {
+            uid: uid,
+            username: user.username,
+            firstName: user.first_name,
+            lastName: user.last_name,
+            languageCode: user.language_code,
+            photoUrl: user.photo_url,
+            linkedAt: FieldValue.serverTimestamp(),
+        };
+        
+        // Use a batch to ensure atomicity
+        const batch = db.batch();
+        batch.set(db.collection('users').doc(uid), newUserRecord);
+        batch.set(telegramProfileRef, newTelegramProfile);
+        await batch.commit();
+    }
+
+    const customToken = await auth.createCustomToken(uid, { telegram_id: telegramId });
 
     return NextResponse.json({
         message: 'Verification successful.',
