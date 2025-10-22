@@ -5,15 +5,21 @@ import { Card } from '@/components/ui/card';
 import { getPlaceholderImage } from '@/lib/placeholder-images';
 import { ArrowRight, Calendar, Star } from 'lucide-react';
 import MarketCard from '@/components/market/MarketCard';
-import { getMarkets, getFixtures } from '@/lib/data';
-import { getOdds } from '@/lib/odds-api';
+import { getMarkets } from '@/lib/data';
 
 export default async function Home() {
   const heroImage = getPlaceholderImage('hero-cricket');
-  const markets = getMarkets(); // This is mock data, we will replace it later.
-  const featuredMarkets = markets.slice(0, 3);
-  const todaysMarkets = markets.slice(3, 6);
-  const rawOdds = await getOdds();
+  const markets = await getMarkets();
+  
+  // Filter for markets starting in the future
+  const upcomingMarkets = markets.filter(m => {
+      // In a real app, we'd get fixture data and check startTimeUtc
+      // For now, we'll just show the first few as featured.
+      return true;
+  });
+
+  const featuredMarkets = upcomingMarkets.slice(0, 3);
+  const todaysMarkets = upcomingMarkets.slice(3, 6);
 
   return (
     <div className="flex flex-col">
@@ -49,20 +55,6 @@ export default async function Home() {
       </section>
 
       <section className="container mx-auto py-12 md:py-16">
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold tracking-tight md:text-3xl font-headline">
-            Raw API Data for Debugging
-          </h2>
-          <p className="text-muted-foreground">
-            This is the raw JSON response from The Odds API.
-          </p>
-          <pre className="mt-4 bg-muted p-4 rounded-lg overflow-x-auto text-xs">
-            {JSON.stringify(rawOdds, null, 2)}
-          </pre>
-        </div>
-      </section>
-
-      <section className="container mx-auto py-12 md:py-16">
         <div className="mb-8 flex items-center justify-between">
           <h2 className="text-2xl font-bold tracking-tight md:text-3xl font-headline flex items-center gap-2">
             <Star className="h-6 w-6 text-primary" />
@@ -73,9 +65,13 @@ export default async function Home() {
           </Button>
         </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {featuredMarkets.map((market) => (
-            <MarketCard key={market.id} marketId={market.id} />
-          ))}
+          {featuredMarkets.length > 0 ? (
+            featuredMarkets.map((market) => (
+              <MarketCard key={market.id} marketId={market.id} />
+            ))
+          ) : (
+             <p className="text-muted-foreground col-span-full">No featured markets available at the moment.</p>
+          )}
         </div>
       </section>
 
@@ -84,16 +80,20 @@ export default async function Home() {
           <div className="mb-8 flex items-center justify-between">
             <h2 className="text-2xl font-bold tracking-tight md:text-3xl font-headline flex items-center gap-2">
               <Calendar className="h-6 w-6 text-accent" />
-              Today's Matches
+              Upcoming Matches
             </h2>
             <Button variant="outline" asChild>
               <Link href="/markets">View All</Link>
             </Button>
           </div>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {todaysMarkets.map((market) => (
-              <MarketCard key={market.id} marketId={market.id} />
-            ))}
+             {todaysMarkets.length > 0 ? (
+                todaysMarkets.map((market) => (
+                    <MarketCard key={market.id} marketId={market.id} />
+                ))
+             ) : (
+                <p className="text-muted-foreground col-span-full">No upcoming matches available at the moment.</p>
+             )}
           </div>
         </div>
       </section>

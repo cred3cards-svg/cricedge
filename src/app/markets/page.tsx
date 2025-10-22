@@ -3,7 +3,7 @@ import MarketFilters from "@/components/market/MarketFilters";
 import { getMarkets } from "@/lib/data";
 
 export default async function MarketsPage() {
-  const markets = getMarkets().filter(m => m.state !== 'DRAFT');
+  const markets = await getMarkets();
 
   return (
     <div className="container mx-auto py-8">

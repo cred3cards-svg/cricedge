@@ -8,10 +8,10 @@ import { getFixtures, getMarkets, getTeam } from "@/lib/data";
 import { format } from "date-fns";
 import { MoreHorizontal } from "lucide-react";
 
-export default function AdminPage() {
+export default async function AdminPage() {
     // In a real app, this page would be protected and only accessible to users with the 'admin' role.
-    const markets = getMarkets();
-    const fixtures = getFixtures();
+    const markets = await getMarkets();
+    const fixtures = await getFixtures();
 
     return (
         <div className="container mx-auto py-8">
@@ -46,8 +46,8 @@ export default function AdminPage() {
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {markets.map(market => {
-                                            const fixture = getFixtures().find(f => f.id === market.fixtureId);
+                                        {markets.map(async (market) => {
+                                            const fixture = await getFixtures().then(f => f.find(fix => fix.id === market.fixtureId));
                                             const homeTeam = fixture ? getTeam(fixture.homeTeamId) : null;
                                             const awayTeam = fixture ? getTeam(fixture.awayTeamId) : null;
                                             return (
@@ -84,7 +84,7 @@ export default function AdminPage() {
                          <Card>
                             <CardHeader>
                                 <CardTitle>Fixtures</CardTitle>
-                                <CardDescription>Fixtures synced from Betfair.</CardDescription>
+                                <CardDescription>Fixtures synced from The Odds API.</CardDescription>
                             </CardHeader>
                             <CardContent>
                                <Table>

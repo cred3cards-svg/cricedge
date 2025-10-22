@@ -14,17 +14,37 @@ type MarketCardProps = {
 };
 
 export default async function MarketCard({ marketId }: MarketCardProps) {
-  const market = getMarket(marketId);
+  const market = await getMarket(marketId);
   if (!market) return <Card className="flex items-center justify-center p-4">Market not found</Card>;
 
   const fixture = await getFixture(market.fixtureId);
-  const pool = getPool(market.id);
+  const pool = await getPool(market.id);
   const homeTeam = fixture ? getTeam(fixture.homeTeamId) : null;
   const awayTeam = fixture ? getTeam(fixture.awayTeamId) : null;
   const competition = fixture ? getCompetition(fixture.competitionId) : null;
 
-  if (!fixture || !homeTeam || !awayTeam || !competition) {
-    return <Card className="flex items-center justify-center p-4">Market data incomplete</Card>;
+  if (!fixture || !homeTeam || !awayTeam || !competition || !pool) {
+    return (
+        <Card className="flex flex-col transition-all hover:shadow-md p-4 space-y-2">
+            <div className="text-sm text-muted-foreground">Loading market...</div>
+            <div className="animate-pulse">
+                <div className="h-4 bg-muted rounded w-3/4"></div>
+                <div className="flex justify-around items-center pt-4">
+                    <div className="flex flex-col items-center gap-2">
+                        <div className="w-12 h-12 rounded-full bg-muted"></div>
+                        <div className="h-4 bg-muted rounded w-12"></div>
+                        <div className="h-6 bg-muted rounded w-16"></div>
+                    </div>
+                    <div className="text-muted-foreground text-sm">vs</div>
+                     <div className="flex flex-col items-center gap-2">
+                        <div className="w-12 h-12 rounded-full bg-muted"></div>
+                        <div className="h-4 bg-muted rounded w-12"></div>
+                        <div className="h-6 bg-muted rounded w-16"></div>
+                    </div>
+                </div>
+            </div>
+        </Card>
+    );
   }
 
   const homeTeamLogo = getPlaceholderImage(homeTeam.logoId);
@@ -53,7 +73,7 @@ export default async function MarketCard({ marketId }: MarketCardProps) {
             <span>{competition.name}</span>
             {getStatusBadge()}
           </div>
-          <CardTitle className="text-lg font-headline pt-2">
+          <CardTitle className="text-lg font-headline pt-2 truncate">
             {homeTeam.name} vs {awayTeam.name}
           </CardTitle>
         </CardHeader>
@@ -81,7 +101,7 @@ export default async function MarketCard({ marketId }: MarketCardProps) {
             <Clock className="h-3 w-3" />
             {market.state === 'OPEN' && `Closes ${formatDistanceToNow(fixture.startTimeUtc, { addSuffix: true })}`}
             {market.state === 'LOCKED' && 'Trading Closed'}
-            {market.state === 'RESOLVED' && `Resolved ${formatDistanceToNow(market.resolvedAt!, { addSuffix: true })}`}
+            {market.state === 'RESOLVED' && `Resolved ${market.resolvedAt ? formatDistanceToNow(market.resolvedAt, { addSuffix: true }) : ''}`}
           </div>
           <div className="flex items-center gap-1">
             <BarChart2 className="h-3 w-3" />

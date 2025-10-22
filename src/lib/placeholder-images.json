@@ -9,37 +9,43 @@
     {
       "id": "team-ind",
       "description": "Logo for Indian cricket team.",
-      "imageUrl": "https://images.unsplash.com/photo-1748326650737-33500fdfda30?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxhYnN0cmFjdCUyMGxvZ298ZW58MHx8fHwxNzYxMTQ0NTEwfDA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "abstract logo"
+      "imageUrl": "https://images.unsplash.com/photo-1725428727722-447bce5c27eb?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxJbmRpYSUyMGZsYWd8ZW58MHx8fHwxNzYxMTMwMzY5fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "India flag"
     },
     {
       "id": "team-aus",
       "description": "Logo for Australian cricket team.",
-      "imageUrl": "https://images.unsplash.com/photo-1723790011180-73be054b6c31?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxhYnN0cmFjdCUyMGxvZ298ZW58MHx8fHwxNzYxMTQ0NTEwfDA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "abstract logo"
+      "imageUrl": "https://images.unsplash.com/photo-1625492132356-9a1a05950bd0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxBdXN0cmFsaWElMjBmbGFnfGVufDB8fHx8MTc2MTE0NjAyNHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "Australia flag"
     },
     {
       "id": "team-eng",
       "description": "Logo for England cricket team.",
-      "imageUrl": "https://images.unsplash.com/photo-1755586258247-67f5148d76c3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8YWJzdHJhY3QlMjBsb2dvfGVufDB8fHx8MTc2MTE0NDUxMHww&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "abstract logo"
+      "imageUrl": "https://images.unsplash.com/photo-1683228079495-ba6ea8b2b932?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxFbmdsYW5kJTIwZmxhZ3xlbnwwfHx8fDE3NjExNTY4ODB8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "England flag"
     },
     {
       "id": "team-pak",
       "description": "Logo for Pakistan cricket team.",
-      "imageUrl": "https://images.unsplash.com/photo-1748326650737-33500fdfda30?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxhYnN0cmFjdCUyMGxvZ298ZW58MHx8fHwxNzYxMTQ0NTEwfDA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "abstract logo"
+      "imageUrl": "https://images.unsplash.com/photo-1637679149566-6af21b6e933a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxQYWtpc3RhbiUyMGZsYWd8ZW58MHx8fHwxNzYxMTU2ODgxfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "Pakistan flag"
     },
     {
       "id": "team-sa",
       "description": "Logo for South Africa cricket team.",
-      "imageUrl": "https://images.unsplash.com/photo-1726409724841-016b6f4f8b1b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxhYnN0cmFjdCUyMGxvZ298ZW58MHx8fHwxNzYxMTQ0NTEwfDA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "abstract logo"
+      "imageUrl": "https://images.unsplash.com/photo-1619428602382-a370e5b73fd9?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxTb3V0aCUyMEFmcmljYSUyMGZsYWd8ZW58MHx8fHwxNzYxMTQ2MDI1fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "South Africa flag"
     },
     {
       "id": "team-nz",
       "description": "Logo for New Zealand cricket team.",
-      "imageUrl": "https://images.unsplash.com/photo-1760037028517-e5cc6e3ebd3e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxhYnN0cmFjdCUyMGxvZ298ZW58MHx8fHwxNzYxMTQ0NTEwfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1659596185510-4c159b17c29a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxOZXclMjBaZWFsYW5kJTIwZmxhZ3xlbnwwfHx8fDE3NjExNDYwMjR8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "New Zealand flag"
+    },
+    {
+      "id": "placeholder-logo",
+      "description": "A generic placeholder logo.",
+      "imageUrl": "https://images.unsplash.com/photo-1754837369018-ff35655d126f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxhYnN0cmFjdCUyMGxvZ298ZW58MHx8fHwxNzYxMTQ0NTEwfDA&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "abstract logo"
     }
   ]

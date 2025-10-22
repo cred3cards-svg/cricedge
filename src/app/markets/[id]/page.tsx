@@ -12,19 +12,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { formatCurrency, formatPercentage } from "@/lib/utils";
 
 export default async function MarketDetailPage({ params }: { params: { id: string } }) {
-  const market = getMarket(params.id);
+  const market = await getMarket(params.id);
   if (!market) {
-      // Since we removed mock data, we'll just show a loading state
-      // A full implementation would fetch this data from Firestore
-      return (
-        <div className="container mx-auto max-w-7xl py-8">
-          <p>Loading market data...</p>
-        </div>
-      )
+      notFound();
   };
 
   const fixture = await getFixture(market.fixtureId);
-  const pool = getPool(market.id);
+  const pool = await getPool(market.id);
   const homeTeam = fixture ? getTeam(fixture.homeTeamId) : null;
   const awayTeam = fixture ? getTeam(fixture.awayTeamId) : null;
   const competition = fixture ? getCompetition(fixture.competitionId) : null;
