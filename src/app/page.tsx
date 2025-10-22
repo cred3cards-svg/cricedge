@@ -29,7 +29,7 @@ export default async function Home() {
             playsInline
             className="absolute inset-0 h-full w-full object-cover"
           >
-            <source src="/Cricket_Animation_For_Website.mp4" type="video/mp4" />
+            <source src="/Cricket_Animation_For_Website_Created.mp4" type="video/mp4" />
           </video>
           <div className="relative grid h-[50vh] min-h-[400px] place-items-center bg-black/50 p-4 text-center">
             <div className="flex flex-col items-center gap-4">
