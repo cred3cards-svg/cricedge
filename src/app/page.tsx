@@ -1,3 +1,86 @@
+import Image from 'next/image';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { getPlaceholderImage } from '@/lib/placeholder-images';
+import { ArrowRight, Calendar, Star } from 'lucide-react';
+import MarketCard from '@/components/market/MarketCard';
+import { getMarkets } from '@/lib/data';
+
 export default function Home() {
-  return <></>;
+  const heroImage = getPlaceholderImage('hero-cricket');
+  const markets = getMarkets();
+  const featuredMarkets = markets.slice(0, 3);
+  const todaysMarkets = markets.slice(3, 6);
+
+  return (
+    <div className="flex flex-col">
+      <section className="relative w-full">
+        <Card className="border-none rounded-none">
+          {heroImage && (
+            <Image
+              alt="Cricket Stadium"
+              className="absolute inset-0 h-full w-full object-cover"
+              src={heroImage.imageUrl}
+              data-ai-hint={heroImage.imageHint}
+              fill
+            />
+          )}
+          <div className="relative grid h-[50vh] min-h-[400px] place-items-center bg-black/50 p-4 text-center">
+            <div className="flex flex-col items-center gap-4">
+              <h1 className="text-4xl font-bold tracking-tight text-primary-foreground md:text-6xl font-headline">
+                The Edge for Cricket Fans
+              </h1>
+              <p className="max-w-2xl text-lg text-primary-foreground/80">
+                Predict match outcomes, trade your insights, and win with the ultimate cricket prediction market.
+              </p>
+              <div className="flex gap-4">
+                <Button asChild size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90">
+                  <Link href="/markets">
+                    View Markets <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </Card>
+      </section>
+
+      <section className="container mx-auto py-12 md:py-16">
+        <div className="mb-8 flex items-center justify-between">
+          <h2 className="text-2xl font-bold tracking-tight md:text-3xl font-headline flex items-center gap-2">
+            <Star className="h-6 w-6 text-primary" />
+            Featured Markets
+          </h2>
+          <Button variant="outline" asChild>
+            <Link href="/markets">View All</Link>
+          </Button>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {featuredMarkets.map((market) => (
+            <MarketCard key={market.id} marketId={market.id} />
+          ))}
+        </div>
+      </section>
+
+      <section className="bg-muted/50 py-12 md:py-16">
+        <div className="container mx-auto">
+          <div className="mb-8 flex items-center justify-between">
+            <h2 className="text-2xl font-bold tracking-tight md:text-3xl font-headline flex items-center gap-2">
+              <Calendar className="h-6 w-6 text-accent" />
+              Today's Matches
+            </h2>
+            <Button variant="outline" asChild>
+              <Link href="/markets">View All</Link>
+            </Button>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {todaysMarkets.map((market) => (
+              <MarketCard key={market.id} marketId={market.id} />
+            ))}
+          </div>
+        </div>
+      </section>
+    </div>
+  );
 }
