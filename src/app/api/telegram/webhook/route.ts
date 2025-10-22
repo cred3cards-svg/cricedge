@@ -3,7 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
   const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-  const TELEGRAM_WEBAPP_URL = process.env.TELEGRAM_WEBAPP_URL;
+  // Fallback to the known URL if the env var is not set.
+  const TELEGRAM_WEBAPP_URL = process.env.TELEGRAM_WEBAPP_URL || 'https://studio--studio-1832356161-758ad.us-central1.hosted.app/tg';
 
   if (!TELEGRAM_BOT_TOKEN) {
     console.error("TELEGRAM_BOT_TOKEN is not set.");
@@ -28,14 +29,14 @@ export async function POST(req: NextRequest) {
             [
               {
                 text: '🚀 Open App',
-                web_app: { url: TELEGRAM_WEBAPP_URL || 'https://studio--studio-1832356161-758ad.us-central1.hosted.app/tg' }
+                web_app: { url: TELEGRAM_WEBAPP_URL }
               }
             ]
           ]
         };
 
         const responseUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
-        await fetch(responseUrl, {
+        const response = await fetch(responseUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -44,6 +45,12 @@ export async function POST(req: NextRequest) {
             reply_markup: inlineKeyboard,
           }),
         });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            console.error("Failed to send message to Telegram:", errorData);
+        }
+
       } else {
         const responseText = `Echo: You said "${text}"`;
         const responseUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
