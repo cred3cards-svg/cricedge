@@ -1,14 +1,11 @@
-import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { getPlaceholderImage } from '@/lib/placeholder-images';
 import { ArrowRight, Calendar, Star } from 'lucide-react';
 import MarketCard from '@/components/market/MarketCard';
 import { getMarkets } from '@/lib/data';
 
 export default async function Home() {
-  const heroImage = getPlaceholderImage('hero-cricket');
   const markets = await getMarkets();
   
   // Filter for markets starting in the future
@@ -25,15 +22,15 @@ export default async function Home() {
     <div className="flex flex-col">
       <section className="relative w-full">
         <Card className="border-none rounded-none">
-          {heroImage && (
-            <Image
-              alt="Cricket Stadium"
-              className="absolute inset-0 h-full w-full object-cover"
-              src={heroImage.imageUrl}
-              data-ai-hint={heroImage.imageHint}
-              fill
-            />
-          )}
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="absolute inset-0 h-full w-full object-cover"
+          >
+            <source src="/Cricket_Animation_For_Website.mp4" type="video/mp4" />
+          </video>
           <div className="relative grid h-[50vh] min-h-[400px] place-items-center bg-black/50 p-4 text-center">
             <div className="flex flex-col items-center gap-4">
               <h1 className="text-4xl font-bold tracking-tight text-primary-foreground md:text-6xl font-headline">
