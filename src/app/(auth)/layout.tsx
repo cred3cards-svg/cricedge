@@ -11,7 +11,7 @@ export default function AuthLayout({
        <div className="absolute top-4 left-4">
         <Link href="/" className="flex items-center gap-2 text-muted-foreground hover:text-foreground">
           <CricketIcon className="h-6 w-6" />
-          <span className="font-bold font-headline">Cricket Edge</span>
+          <span className="font-bold font-headline">OnlyWin</span>
         </Link>
       </div>
       {children}

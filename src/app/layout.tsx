@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 
 export const metadata: Metadata = {
-  title: 'Cricket Edge',
+  title: 'OnlyWin',
   description: 'The premier prediction market for cricket fans.',
 };
 
