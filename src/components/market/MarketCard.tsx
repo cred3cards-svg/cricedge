@@ -13,11 +13,11 @@ type MarketCardProps = {
   marketId: string;
 };
 
-export default function MarketCard({ marketId }: MarketCardProps) {
+export default async function MarketCard({ marketId }: MarketCardProps) {
   const market = getMarket(marketId);
   if (!market) return <Card className="flex items-center justify-center p-4">Market not found</Card>;
 
-  const fixture = getFixture(market.fixtureId);
+  const fixture = await getFixture(market.fixtureId);
   const pool = getPool(market.id);
   const homeTeam = fixture ? getTeam(fixture.homeTeamId) : null;
   const awayTeam = fixture ? getTeam(fixture.awayTeamId) : null;

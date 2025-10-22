@@ -2,7 +2,7 @@ import MarketCard from "@/components/market/MarketCard";
 import MarketFilters from "@/components/market/MarketFilters";
 import { getMarkets } from "@/lib/data";
 
-export default function MarketsPage() {
+export default async function MarketsPage() {
   const markets = getMarkets().filter(m => m.state !== 'DRAFT');
 
   return (

@@ -4,14 +4,14 @@ import Image from "next/image";
 import { getPlaceholderImage } from "@/lib/placeholder-images";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { format, add } from "date-fns";
+import { format } from "date-fns";
 import { Clock, Info, Lock, ShieldCheck, Users } from "lucide-react";
 import PriceChart from "@/components/market/PriceChart";
 import TradeWidget from "@/components/market/TradeWidget";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatCurrency, formatPercentage } from "@/lib/utils";
 
-export default function MarketDetailPage({ params }: { params: { id: string } }) {
+export default async function MarketDetailPage({ params }: { params: { id: string } }) {
   const market = getMarket(params.id);
   if (!market) {
       // Since we removed mock data, we'll just show a loading state
@@ -23,7 +23,7 @@ export default function MarketDetailPage({ params }: { params: { id: string } })
       )
   };
 
-  const fixture = getFixture(market.fixtureId);
+  const fixture = await getFixture(market.fixtureId);
   const pool = getPool(market.id);
   const homeTeam = fixture ? getTeam(fixture.homeTeamId) : null;
   const awayTeam = fixture ? getTeam(fixture.awayTeamId) : null;

@@ -7,9 +7,9 @@ import { ArrowRight, Calendar, Star } from 'lucide-react';
 import MarketCard from '@/components/market/MarketCard';
 import { getMarkets } from '@/lib/data';
 
-export default function Home() {
+export default async function Home() {
   const heroImage = getPlaceholderImage('hero-cricket');
-  const markets = getMarkets();
+  const markets = getMarkets(); // This is mock data, we will replace it later.
   const featuredMarkets = markets.slice(0, 3);
   const todaysMarkets = markets.slice(3, 6);
 
