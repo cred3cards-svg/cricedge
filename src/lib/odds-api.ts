@@ -1,6 +1,6 @@
 // In a real application, this API key should be stored in an environment variable.
 const API_KEY = 'c682c3afe945f4d81855dc2a2a0b4576';
-const SPORT = 'cricket_odi'; // Example: One Day International Cricket
+const SPORT = 'cricket'; // Changed from cricket_odi to cricket to get all cricket matches
 const REGIONS = 'au,eu,uk,us'; // Australia, Europe, UK, US
 const MARKETS = 'h2h'; // Head to head
 const DAYS_FROM = '15';

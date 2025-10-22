@@ -5,13 +5,15 @@ import { Card } from '@/components/ui/card';
 import { getPlaceholderImage } from '@/lib/placeholder-images';
 import { ArrowRight, Calendar, Star } from 'lucide-react';
 import MarketCard from '@/components/market/MarketCard';
-import { getMarkets } from '@/lib/data';
+import { getMarkets, getFixtures } from '@/lib/data';
+import { getOdds } from '@/lib/odds-api';
 
 export default async function Home() {
   const heroImage = getPlaceholderImage('hero-cricket');
   const markets = getMarkets(); // This is mock data, we will replace it later.
   const featuredMarkets = markets.slice(0, 3);
   const todaysMarkets = markets.slice(3, 6);
+  const rawOdds = await getOdds();
 
   return (
     <div className="flex flex-col">
@@ -44,6 +46,20 @@ export default async function Home() {
             </div>
           </div>
         </Card>
+      </section>
+
+      <section className="container mx-auto py-12 md:py-16">
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold tracking-tight md:text-3xl font-headline">
+            Raw API Data for Debugging
+          </h2>
+          <p className="text-muted-foreground">
+            This is the raw JSON response from The Odds API.
+          </p>
+          <pre className="mt-4 bg-muted p-4 rounded-lg overflow-x-auto text-xs">
+            {JSON.stringify(rawOdds, null, 2)}
+          </pre>
+        </div>
       </section>
 
       <section className="container mx-auto py-12 md:py-16">
