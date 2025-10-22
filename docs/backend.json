@@ -488,6 +488,34 @@
         "payload",
         "createdAt"
       ]
+    },
+    "TelegramProfile": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "TelegramProfile",
+      "type": "object",
+      "description": "Maps a Telegram user ID to a Firebase user ID (uid).",
+      "properties": {
+        "uid": { "type": "string", "description": "The corresponding Firebase Authentication user ID." },
+        "username": { "type": "string", "description": "The Telegram username." },
+        "firstName": { "type": "string", "description": "The user's first name from Telegram." },
+        "lastName": { "type": "string", "description": "The user's last name from Telegram." },
+        "languageCode": { "type": "string", "description": "The user's language code from Telegram." },
+        "photoUrl": { "type": "string", "description": "URL of the user's Telegram profile photo.", "format": "uri" },
+        "linkedAt": { "type": "string", "description": "Timestamp when the Telegram account was linked.", "format": "date-time" }
+      },
+      "required": ["uid", "username"]
+    },
+    "BotSession": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "BotSession",
+      "type": "object",
+      "description": "Stores conversational context for the Telegram bot.",
+      "properties": {
+        "uid": { "type": "string", "description": "The Firebase user ID associated with the chat." },
+        "lastIntent": { "type": "string", "description": "The last detected user intent (e.g., 'quote', 'trade')." },
+        "lastMarketId": { "type": "string", "description": "The market ID the user was last interacting with." },
+        "expiresAt": { "type": "string", "description": "Timestamp when the session context should expire.", "format": "date-time" }
+      }
     }
   },
   "auth": {
@@ -698,8 +726,26 @@
             }
           ]
         }
+      },
+      {
+        "path": "/telegramProfiles/{telegramId}",
+        "definition": {
+          "entityName": "TelegramProfile",
+          "schema": { "$ref": "#/backend/entities/TelegramProfile" },
+          "description": "Stores the mapping from a Telegram user ID to a Firebase user ID.",
+          "params": [{ "name": "telegramId", "description": "The user's unique Telegram ID." }]
+        }
+      },
+      {
+        "path": "/botSessions/{chatId}",
+        "definition": {
+          "entityName": "BotSession",
+          "schema": { "$ref": "#/backend/entities/BotSession" },
+          "description": "Stores temporary conversational state for the Telegram bot.",
+          "params": [{ "name": "chatId", "description": "The ID of the Telegram chat." }]
+        }
       }
     ],
-    "reasoning": "The Firestore data structure is designed to support a cricket prediction market MVP. It prioritizes authorization independence through denormalization and supports secure list operations using structural segregation and consistent access modeling.\n\n**Authorization Independence:**\n\n*   The structure avoids hierarchical authorization dependencies (`get()`) by denormalizing authorization data. For example, while markets belong to a fixture, the market documents don't rely on reading the fixture document for authorization. Admin status is checked via a dedicated collection (`/roles_admin/{uid}`).\n\n**Structural Segregation:**\n\n*   Data with different access needs is segregated into different collections. User-specific data is stored under `/users/{uid}`, while global data (competitions, teams, fixtures) resides in top-level collections.\n\n**Access Modeling:**\n\n*   Path-based ownership is used for private user data (wallets, positions, trades) stored under `/users/{uid}`.\n*   Admin access is modeled using the existence of a document in the `/roles_admin/{uid}` collection.\n\n**QAPs (Rules are not Filters):**\n\n*   The segregation of public and private data enables secure list operations. For example, listing competitions or teams does not require filtering based on user roles.\n\n**Other Considerations:**\n\n*   Timestamps are consistently named (e.g., `createdAt`, `updatedAt`).\n*   Relationships between entities are maintained through IDs (e.g., `fixtureId` in `markets`)."
+    "reasoning": "The Firestore data structure is designed to support a cricket prediction market MVP. It prioritizes authorization independence through denormalization and supports secure list operations using structural segregation and consistent access modeling.\n\n**Authorization Independence:**\n\n*   The structure avoids hierarchical authorization dependencies (`get()`) by denormalizing authorization data. For example, while markets belong to a fixture, the market documents don't rely on reading the fixture document for authorization. Admin status is checked via a dedicated collection (`/roles_admin/{uid}`).\n\n**Structural Segregation:**\n\n*   Data with different access needs is segregated into different collections. User-specific data is stored under `/users/{uid}`, while global data (competitions, teams, fixtures) resides in top-level collections.\n\n**Access Modeling:**\n\n*   Path-based ownership is used for private user data (wallets, positions, trades) stored under `/users/{uid}`.\n*   Admin access is modeled using the existence of a document in the `/roles_admin/{uid}` collection.\n\n**QAPs (Rules are not Filters):**\n\n*   The segregation of public and private data enables secure list operations. For example, listing competitions or teams does not require filtering based on user roles."
   }
 }
