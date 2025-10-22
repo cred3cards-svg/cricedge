@@ -1,0 +1,717 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user in the system.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the User entity."
+        },
+        "email": {
+          "type": "string",
+          "description": "User's email address.",
+          "format": "email"
+        },
+        "handle": {
+          "type": "string",
+          "description": "User's chosen handle or username."
+        },
+        "role": {
+          "type": "string",
+          "description": "User's role (e.g., 'user' or 'admin')."
+        },
+        "kycStatus": {
+          "type": "string",
+          "description": "User's KYC (Know Your Customer) status (e.g., 'none' or 'basic')."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the user account was created.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "email",
+        "handle",
+        "role",
+        "kycStatus",
+        "createdAt"
+      ]
+    },
+    "Wallet": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Wallet",
+      "type": "object",
+      "description": "Represents a user's wallet for demo credits.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Wallet entity (corresponds to the user ID)."
+        },
+        "balanceDemo": {
+          "type": "number",
+          "description": "User's balance of demo credits."
+        },
+        "lockedDemo": {
+          "type": "number",
+          "description": "Amount of demo credits currently locked (e.g., in trades)."
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the wallet was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "balanceDemo",
+        "lockedDemo",
+        "updatedAt"
+      ]
+    },
+    "Competition": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Competition",
+      "type": "object",
+      "description": "Represents a cricket competition (e.g., IPL, ICC World Cup).",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Competition entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the competition."
+        },
+        "region": {
+          "type": "string",
+          "description": "Geographic region where the competition takes place."
+        },
+        "level": {
+          "type": "string",
+          "description": "Level or tier of the competition."
+        },
+        "isActive": {
+          "type": "boolean",
+          "description": "Indicates whether the competition is currently active."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "region",
+        "level",
+        "isActive"
+      ]
+    },
+    "Team": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Team",
+      "type": "object",
+      "description": "Represents a cricket team.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Team entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "Full name of the team."
+        },
+        "shortName": {
+          "type": "string",
+          "description": "Abbreviated name of the team."
+        },
+        "country": {
+          "type": "string",
+          "description": "Country the team represents."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "shortName",
+        "country"
+      ]
+    },
+    "Fixture": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Fixture",
+      "type": "object",
+      "description": "Represents a cricket match fixture.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Fixture entity."
+        },
+        "betfairEventId": {
+          "type": "string",
+          "description": "Betfair's unique event ID for the fixture."
+        },
+        "competitionId": {
+          "type": "string",
+          "description": "Reference to Competition. (Relationship: Competition 1:N Fixture)"
+        },
+        "homeTeamId": {
+          "type": "string",
+          "description": "Reference to the home Team. (Relationship: Team 1:N Fixture (Home Team))"
+        },
+        "awayTeamId": {
+          "type": "string",
+          "description": "Reference to the away Team. (Relationship: Team 1:N Fixture (Away Team))"
+        },
+        "startTimeUtc": {
+          "type": "string",
+          "description": "Scheduled start time of the fixture in UTC.",
+          "format": "date-time"
+        },
+        "status": {
+          "type": "string",
+          "description": "Current status of the fixture (e.g., 'SCHEDULED', 'LIVE', 'FINISHED')."
+        },
+        "rawBetfair": {
+          "type": "string",
+          "description": "Raw payload from the Betfair API for audit purposes."
+        }
+      },
+      "required": [
+        "id",
+        "betfairEventId",
+        "competitionId",
+        "homeTeamId",
+        "awayTeamId",
+        "startTimeUtc",
+        "status"
+      ]
+    },
+    "Market": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Market",
+      "type": "object",
+      "description": "Represents a prediction market for a fixture.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Market entity."
+        },
+        "fixtureId": {
+          "type": "string",
+          "description": "Reference to Fixture. (Relationship: Fixture 1:N Market)"
+        },
+        "type": {
+          "type": "string",
+          "description": "Type of market (e.g., 'MATCH_WINNER')."
+        },
+        "state": {
+          "type": "string",
+          "description": "Current state of the market (e.g., 'DRAFT', 'OPEN', 'LOCKED')."
+        },
+        "feeBps": {
+          "type": "number",
+          "description": "Fee charged on trades in basis points."
+        },
+        "createdBy": {
+          "type": "string",
+          "description": "User ID of the admin who created the market."
+        },
+        "publishedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the market was published.",
+          "format": "date-time"
+        },
+        "resolution": {
+          "type": "string",
+          "description": "Resolution of the market (e.g., 'YES', 'NO', 'VOID')."
+        },
+        "resolvedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the market was resolved.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "fixtureId",
+        "type",
+        "state",
+        "feeBps",
+        "createdBy",
+        "publishedAt"
+      ]
+    },
+    "Pool": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Pool",
+      "type": "object",
+      "description": "Represents the Constant Product Market Maker (CPMM) pool for a market.",
+      "properties": {
+        "marketId": {
+          "type": "string",
+          "description": "Reference to Market. (Relationship: Market 1:1 Pool).  Unique identifier for the Pool entity (corresponds to the market ID)."
+        },
+        "xYes": {
+          "type": "number",
+          "description": "Number of YES shares in the pool."
+        },
+        "yNo": {
+          "type": "number",
+          "description": "Number of NO shares in the pool."
+        },
+        "k": {
+          "type": "number",
+          "description": "Constant product (k = xYes * yNo)."
+        },
+        "lastPriceYes": {
+          "type": "number",
+          "description": "Last traded price for YES shares."
+        },
+        "lastPriceNo": {
+          "type": "number",
+          "description": "Last traded price for NO shares."
+        },
+        "liquiditySeed": {
+          "type": "number",
+          "description": "Initial liquidity seed value for the pool."
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the pool was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "marketId",
+        "xYes",
+        "yNo",
+        "k",
+        "lastPriceYes",
+        "lastPriceNo",
+        "liquiditySeed",
+        "updatedAt"
+      ]
+    },
+    "Trade": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Trade",
+      "type": "object",
+      "description": "Represents a user's trade on a market.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Trade entity."
+        },
+        "uid": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N Trade)"
+        },
+        "marketId": {
+          "type": "string",
+          "description": "Reference to Market. (Relationship: Market 1:N Trade)"
+        },
+        "side": {
+          "type": "string",
+          "description": "Side of the trade ('YES' or 'NO')."
+        },
+        "amount": {
+          "type": "number",
+          "description": "Amount of demo credits traded."
+        },
+        "shares": {
+          "type": "number",
+          "description": "Number of shares acquired in the trade."
+        },
+        "avgPrice": {
+          "type": "number",
+          "description": "Average price paid per share."
+        },
+        "fee": {
+          "type": "number",
+          "description": "Fee charged on the trade."
+        },
+        "clientTxnId": {
+          "type": "string",
+          "description": "Client-provided transaction ID for idempotency."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the trade was executed.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "uid",
+        "marketId",
+        "side",
+        "amount",
+        "shares",
+        "avgPrice",
+        "fee",
+        "clientTxnId",
+        "createdAt"
+      ]
+    },
+    "Position": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Position",
+      "type": "object",
+      "description": "Represents a user's position in a market.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Position entity (combination of userId and marketId)."
+        },
+        "uid": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N Position)"
+        },
+        "marketId": {
+          "type": "string",
+          "description": "Reference to Market. (Relationship: Market 1:N Position)"
+        },
+        "yesShares": {
+          "type": "number",
+          "description": "Number of YES shares held in the position."
+        },
+        "noShares": {
+          "type": "number",
+          "description": "Number of NO shares held in the position."
+        },
+        "avgPriceYes": {
+          "type": "number",
+          "description": "Average price paid for YES shares in the position."
+        },
+        "avgPriceNo": {
+          "type": "number",
+          "description": "Average price paid for NO shares in the position."
+        },
+        "realizedPnl": {
+          "type": "number",
+          "description": "Realized profit and loss from the position."
+        },
+        "unrealizedPnl": {
+          "type": "number",
+          "description": "Unrealized profit and loss from the position."
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the position was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "uid",
+        "marketId",
+        "yesShares",
+        "noShares",
+        "avgPriceYes",
+        "avgPriceNo",
+        "realizedPnl",
+        "unrealizedPnl",
+        "updatedAt"
+      ]
+    },
+    "Settlement": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Settlement",
+      "type": "object",
+      "description": "Represents the settlement of a market after resolution.",
+      "properties": {
+        "marketId": {
+          "type": "string",
+          "description": "Reference to Market. (Relationship: Market 1:1 Settlement).  Unique identifier for the Settlement entity (corresponds to the market ID)."
+        },
+        "outcome": {
+          "type": "string",
+          "description": "Outcome of the market ('YES', 'NO', or 'VOID')."
+        },
+        "proofUrl": {
+          "type": "string",
+          "description": "URL providing proof of the market's resolution (e.g., Betfair event page).",
+          "format": "uri"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Any notes or comments regarding the settlement."
+        },
+        "resolvedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the market was resolved.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "marketId",
+        "outcome",
+        "resolvedAt"
+      ]
+    },
+    "AuditLog": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "AuditLog",
+      "type": "object",
+      "description": "Represents an audit log entry for system events and actions.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the AuditLog entity."
+        },
+        "actorType": {
+          "type": "string",
+          "description": "Type of actor performing the action ('ADMIN', 'SYSTEM', or 'USER')."
+        },
+        "actorId": {
+          "type": "string",
+          "description": "ID of the actor performing the action."
+        },
+        "entityType": {
+          "type": "string",
+          "description": "Type of entity affected by the action."
+        },
+        "entityId": {
+          "type": "string",
+          "description": "ID of the entity affected by the action."
+        },
+        "action": {
+          "type": "string",
+          "description": "Description of the action performed."
+        },
+        "payload": {
+          "type": "string",
+          "description": "JSON payload containing details of the action."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the action occurred.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "actorType",
+        "actorId",
+        "entityType",
+        "entityId",
+        "action",
+        "payload",
+        "createdAt"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profile data. Accessible to the user themselves.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/wallets/{walletId}",
+        "definition": {
+          "entityName": "Wallet",
+          "schema": {
+            "$ref": "#/backend/entities/Wallet"
+          },
+          "description": "Stores user's wallet information. Accessible to the user themselves, where walletId == userId.",
+          "params": [
+            {
+              "name": "walletId",
+              "description": "The unique identifier of the wallet, which is the same as the user ID."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/competitions/{competitionId}",
+        "definition": {
+          "entityName": "Competition",
+          "schema": {
+            "$ref": "#/backend/entities/Competition"
+          },
+          "description": "Stores cricket competition data. Publicly readable.",
+          "params": [
+            {
+              "name": "competitionId",
+              "description": "The unique identifier of the competition."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/teams/{teamId}",
+        "definition": {
+          "entityName": "Team",
+          "schema": {
+            "$ref": "#/backend/entities/Team"
+          },
+          "description": "Stores cricket team data. Publicly readable.",
+          "params": [
+            {
+              "name": "teamId",
+              "description": "The unique identifier of the team."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/fixtures/{fixtureId}",
+        "definition": {
+          "entityName": "Fixture",
+          "schema": {
+            "$ref": "#/backend/entities/Fixture"
+          },
+          "description": "Stores cricket match fixture data. Publicly readable.",
+          "params": [
+            {
+              "name": "fixtureId",
+              "description": "The unique identifier of the fixture."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/markets/{marketId}",
+        "definition": {
+          "entityName": "Market",
+          "schema": {
+            "$ref": "#/backend/entities/Market"
+          },
+          "description": "Stores market data for each fixture.  Admin-controlled access for creation/modification.",
+          "params": [
+            {
+              "name": "marketId",
+              "description": "The unique identifier of the market."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/pools/{marketId}",
+        "definition": {
+          "entityName": "Pool",
+          "schema": {
+            "$ref": "#/backend/entities/Pool"
+          },
+          "description": "Stores CPMM pool data for each market.  Restricted writes via Cloud Functions.",
+          "params": [
+            {
+              "name": "marketId",
+              "description": "The unique identifier of the market, which corresponds to the pool ID."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/trades/{tradeId}",
+        "definition": {
+          "entityName": "Trade",
+          "schema": {
+            "$ref": "#/backend/entities/Trade"
+          },
+          "description": "Stores trade data for each user.  Accessible only to the user.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who made the trade."
+            },
+            {
+              "name": "tradeId",
+              "description": "The unique identifier of the trade."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/positions/{positionId}",
+        "definition": {
+          "entityName": "Position",
+          "schema": {
+            "$ref": "#/backend/entities/Position"
+          },
+          "description": "Stores position data for each user. Accessible only to the user.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user holding the position."
+            },
+            {
+              "name": "positionId",
+              "description": "The unique identifier of the position (combination of userId and marketId)."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/settlements/{marketId}",
+        "definition": {
+          "entityName": "Settlement",
+          "schema": {
+            "$ref": "#/backend/entities/Settlement"
+          },
+          "description": "Stores settlement data for each market.  Admin-controlled access.",
+          "params": [
+            {
+              "name": "marketId",
+              "description": "The unique identifier of the market that was settled."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/audit/{logId}",
+        "definition": {
+          "entityName": "AuditLog",
+          "schema": {
+            "$ref": "#/backend/entities/AuditLog"
+          },
+          "description": "Stores audit log entries. Restricted access for auditing purposes.",
+          "params": [
+            {
+              "name": "logId",
+              "description": "The unique identifier of the audit log entry."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/roles_admin/{userId}",
+        "definition": {
+          "entityName": "role",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores the existence of admin roles. Used for authorization checks.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who has admin privileges."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore data structure is designed to support a cricket prediction market MVP. It prioritizes authorization independence through denormalization and supports secure list operations using structural segregation and consistent access modeling.\n\n**Authorization Independence:**\n\n*   The structure avoids hierarchical authorization dependencies (`get()`) by denormalizing authorization data. For example, while markets belong to a fixture, the market documents don't rely on reading the fixture document for authorization. Admin status is checked via a dedicated collection (`/roles_admin/{uid}`).\n\n**Structural Segregation:**\n\n*   Data with different access needs is segregated into different collections. User-specific data is stored under `/users/{uid}`, while global data (competitions, teams, fixtures) resides in top-level collections.\n\n**Access Modeling:**\n\n*   Path-based ownership is used for private user data (wallets, positions, trades) stored under `/users/{uid}`.\n*   Admin access is modeled using the existence of a document in the `/roles_admin/{uid}` collection.\n\n**QAPs (Rules are not Filters):**\n\n*   The segregation of public and private data enables secure list operations. For example, listing competitions or teams does not require filtering based on user roles.\n\n**Other Considerations:**\n\n*   Timestamps are consistently named (e.g., `createdAt`, `updatedAt`).\n*   Relationships between entities are maintained through IDs (e.g., `fixtureId` in `markets`)."
+  }
+}
