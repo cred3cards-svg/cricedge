@@ -9,13 +9,14 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
-import { MoreHorizontal } from "lucide-react";
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { MoreHorizontal, Loader2 } from "lucide-react";
+import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { collection, collectionGroup, getDocs, query } from 'firebase/firestore';
 import type { User, Trade, Market, Fixture, Team } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatCurrency } from '@/lib/utils';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 const FixtureRow = ({ fixture, teams }: { fixture: Fixture, teams: Team[] | null }) => {
     const homeTeam = useMemo(() => teams?.find(t => t.id === fixture.homeTeamId), [teams, fixture.homeTeamId]);
@@ -87,11 +88,13 @@ const MarketRow = ({ market, fixtures, teams }: { market: Market, fixtures: Fixt
 
 export default function AdminPage() {
     const firestore = useFirestore();
+    const { user, isUserLoading } = useUser();
+    const router = useRouter();
 
     const usersQuery = useMemoFirebase(() => {
-        if (!firestore) return null;
+        if (!firestore || !user) return null; // Don't query if not logged in
         return collection(firestore, 'users');
-    }, [firestore]);
+    }, [firestore, user]);
     const { data: users, isLoading: isLoadingUsers } = useCollection<User>(usersQuery);
 
     const marketsQuery = useMemoFirebase(() => {
@@ -117,7 +120,7 @@ export default function AdminPage() {
     const [isLoadingTrades, setIsLoadingTrades] = useState(true);
 
     useEffect(() => {
-        if (!firestore) return;
+        if (!firestore || !user) return; // Don't run if not logged in
 
         const fetchAllTrades = async () => {
             setIsLoadingTrades(true);
@@ -134,7 +137,21 @@ export default function AdminPage() {
         };
 
         fetchAllTrades();
-    }, [firestore]);
+    }, [firestore, user]);
+
+    useEffect(() => {
+        if (!isUserLoading && !user) {
+            router.push('/login');
+        }
+    }, [isUserLoading, user, router]);
+
+    if (isUserLoading || !user) {
+        return (
+            <div className="flex h-screen w-full items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+        );
+    }
 
     return (
         <div className="container mx-auto py-8">
@@ -281,7 +298,7 @@ export default function AdminPage() {
                             <CardHeader>
                                 <CardTitle>Fixtures</CardTitle>
                                 <CardDescription>Fixtures stored in the database.</CardDescription>
-                            </CardHeader>
+                            </Header>
                             <CardContent>
                                <Table>
                                     <TableHeader>
@@ -311,5 +328,4 @@ export default function AdminPage() {
             </div>
         </div>
     );
-
-    
+}
