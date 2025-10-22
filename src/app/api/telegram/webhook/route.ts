@@ -3,8 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
   const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-  // Fallback to the known URL if the env var is not set.
-  const TELEGRAM_WEBAPP_URL = process.env.TELEGRAM_WEBAPP_URL || 'https://studio--studio-1832356161-758ad.us-central1.hosted.app/tg';
+  // Correctly reference the public environment variable and provide a robust fallback.
+  const TELEGRAM_WEBAPP_URL = process.env.NEXT_PUBLIC_TELEGRAM_WEBAPP_URL || 'https://studio--studio-1832356161-758ad.us-central1.hosted.app/tg';
 
   if (!TELEGRAM_BOT_TOKEN) {
     console.error("TELEGRAM_BOT_TOKEN is not set.");
