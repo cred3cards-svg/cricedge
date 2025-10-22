@@ -34,11 +34,8 @@ export default async function Home() {
           <div className="relative grid h-[50vh] min-h-[400px] place-items-center bg-black/50 p-4 text-center">
             <div className="flex flex-col items-center gap-4">
               <h1 className="text-4xl font-bold tracking-tight text-primary-foreground md:text-6xl font-headline">
-                The Edge for Cricket Fans
+                Trade Your Cricket Instincts
               </h1>
-              <p className="max-w-2xl text-lg text-primary-foreground/80">
-                Predict match outcomes, trade your insights, and win with the ultimate cricket prediction market.
-              </p>
               <div className="flex gap-4">
                 <Button asChild size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90">
                   <Link href="/markets">
