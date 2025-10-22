@@ -1,5 +1,5 @@
 export type User = {
-  uid: string;
+  id: string;
   email: string;
   handle: string;
   role: "user" | "admin";
@@ -66,7 +66,7 @@ export type Pool = {
 };
 
 export type Trade = {
-  tradeId: string;
+  id: string;
   uid: string;
   marketId: string;
   side: "YES" | "NO";

@@ -1,17 +1,151 @@
+
+'use client';
+
+import { useEffect, useMemo, useState } from 'react';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { getFixtures, getMarkets, getTeam } from "@/lib/data";
+import { getTeam } from "@/lib/data";
 import { format } from "date-fns";
 import { MoreHorizontal } from "lucide-react";
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, collectionGroup, getDocs, query } from 'firebase/firestore';
+import type { User, Trade, Market, Fixture, Team } from '@/lib/types';
+import { Skeleton } from '@/components/ui/skeleton';
+import { formatCurrency } from '@/lib/utils';
+import Link from 'next/link';
 
-export default async function AdminPage() {
-    // In a real app, this page would be protected and only accessible to users with the 'admin' role.
-    const markets = await getMarkets();
-    const fixtures = await getFixtures();
+const FixtureRow = ({ fixture }: { fixture: Fixture }) => {
+    const [homeTeam, setHomeTeam] = useState<Team | null>(null);
+    const [awayTeam, setAwayTeam] = useState<Team | null>(null);
+
+    useEffect(() => {
+        const fetchTeams = async () => {
+            const home = await getTeam(fixture.homeTeamId);
+            const away = await getTeam(fixture.awayTeamId);
+            setHomeTeam(home ?? null);
+            setAwayTeam(away ?? null);
+        }
+        fetchTeams();
+    }, [fixture]);
+
+    if (!homeTeam || !awayTeam) {
+        return (
+            <TableRow>
+                <TableCell><Skeleton className="h-4 w-40" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                <TableCell><Skeleton className="h-6 w-20" /></TableCell>
+            </TableRow>
+        )
+    }
+
+    return (
+         <TableRow key={fixture.id}>
+            <TableCell>{homeTeam?.name} vs {awayTeam?.name}</TableCell>
+            <TableCell>{fixture.competitionId}</TableCell>
+            <TableCell>{format(fixture.startTimeUtc, 'Pp')}</TableCell>
+            <TableCell><Badge variant="outline">{fixture.status}</Badge></TableCell>
+        </TableRow>
+    )
+}
+
+const MarketRow = ({ market, fixtures, teams }: { market: Market, fixtures: Fixture[] | null, teams: Team[] | null }) => {
+    const fixture = useMemo(() => fixtures?.find(f => f.id === market.fixtureId), [fixtures, market.fixtureId]);
+    const homeTeam = useMemo(() => fixture ? teams?.find(t => t.id === fixture.homeTeamId) : null, [teams, fixture]);
+    const awayTeam = useMemo(() => fixture ? teams?.find(t => t.id === fixture.awayTeamId) : null, [teams, fixture]);
+
+    if (!fixture || !homeTeam || !awayTeam) {
+         return (
+            <TableRow>
+                <TableCell><Skeleton className="h-4 w-40" /></TableCell>
+                <TableCell><Skeleton className="h-6 w-20" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                <TableCell><Skeleton className="h-8 w-8" /></TableCell>
+            </TableRow>
+        )
+    }
+    
+    return (
+         <TableRow key={market.id}>
+            <TableCell className="font-medium">{homeTeam?.name} vs {awayTeam?.name}</TableCell>
+            <TableCell><Badge variant={market.state === 'OPEN' ? 'default' : 'secondary'} className={market.state === 'OPEN' ? 'bg-green-100 text-green-800' : ''}>{market.state}</Badge></TableCell>
+            <TableCell>{fixture ? format(fixture.startTimeUtc, 'Pp') : 'N/A'}</TableCell>
+            <TableCell>{market.resolution ?? 'N/A'}</TableCell>
+            <TableCell>
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                            <span className="sr-only">Open menu</span>
+                            <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuItem>Publish</DropdownMenuItem>
+                        <DropdownMenuItem>Lock</DropdownMenuItem>
+                        <DropdownMenuItem>Resolve</DropdownMenuItem>
+                        <DropdownMenuItem className="text-red-500">Void</DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            </TableCell>
+        </TableRow>
+    )
+}
+
+export default function AdminPage() {
+    const firestore = useFirestore();
+
+    const usersQuery = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return collection(firestore, 'users');
+    }, [firestore]);
+    const { data: users, isLoading: isLoadingUsers } = useCollection<User>(usersQuery);
+
+    const marketsQuery = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return collection(firestore, 'markets');
+    }, [firestore]);
+    const { data: markets, isLoading: isLoadingMarkets } = useCollection<Market>(marketsQuery);
+    
+    const fixturesQuery = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return collection(firestore, 'fixtures');
+    }, [firestore]);
+    const { data: fixtures, isLoading: isLoadingFixtures } = useCollection<Fixture>(fixturesQuery);
+
+    const teamsQuery = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return collection(firestore, 'teams');
+    }, [firestore]);
+    const { data: teams, isLoading: isLoadingTeams } = useCollection<Team>(teamsQuery);
+
+
+    const [allTrades, setAllTrades] = useState<Trade[]>([]);
+    const [isLoadingTrades, setIsLoadingTrades] = useState(true);
+
+    useEffect(() => {
+        if (!firestore) return;
+
+        const fetchAllTrades = async () => {
+            setIsLoadingTrades(true);
+            const trades: Trade[] = [];
+            const tradesQuery = query(collectionGroup(firestore, 'trades'));
+            const querySnapshot = await getDocs(tradesQuery);
+            querySnapshot.forEach((doc) => {
+                trades.push({ ...doc.data(), id: doc.id } as Trade);
+            });
+            // Sort trades by creation time, newest first
+            trades.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+            setAllTrades(trades);
+            setIsLoadingTrades(false);
+        };
+
+        fetchAllTrades();
+    }, [firestore]);
 
     return (
         <div className="container mx-auto py-8">
@@ -21,18 +155,111 @@ export default async function AdminPage() {
                     <p className="text-muted-foreground">Manage markets, fixtures, and application settings.</p>
                 </header>
 
-                <Tabs defaultValue="markets">
+                <Tabs defaultValue="users">
                     <TabsList>
+                        <TabsTrigger value="users">Users</TabsTrigger>
+                        <TabsTrigger value="trades">All Trades</TabsTrigger>
                         <TabsTrigger value="markets">Markets</TabsTrigger>
                         <TabsTrigger value="fixtures">Fixtures</TabsTrigger>
-                        <TabsTrigger value="users">Users</TabsTrigger>
                         <TabsTrigger value="audit">Audit Log</TabsTrigger>
                     </TabsList>
+                    <TabsContent value="users">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>User Management</CardTitle>
+                                <CardDescription>View and manage all registered users.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Email</TableHead>
+                                            <TableHead>Handle</TableHead>
+                                            <TableHead>Role</TableHead>
+                                            <TableHead>User ID</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {isLoadingUsers ? (
+                                            Array.from({ length: 5 }).map((_, i) => (
+                                                <TableRow key={i}>
+                                                    <TableCell><Skeleton className="h-4 w-48" /></TableCell>
+                                                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                                                    <TableCell><Skeleton className="h-4 w-12" /></TableCell>
+                                                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                                                </TableRow>
+                                            ))
+                                        ) : (
+                                            users?.map((user) => (
+                                                <TableRow key={user.id}>
+                                                    <TableCell className="font-medium">{user.email}</TableCell>
+                                                    <TableCell>{user.handle}</TableCell>
+                                                    <TableCell>
+                                                        <Badge variant={user.role === 'admin' ? 'destructive' : 'outline'}>
+                                                            {user.role}
+                                                        </Badge>
+                                                    </TableCell>
+                                                    <TableCell className="text-muted-foreground text-xs">{user.id}</TableCell>
+                                                </TableRow>
+                                            ))
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+                    <TabsContent value="trades">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>All Trades</CardTitle>
+                                <CardDescription>A log of every trade placed across all markets.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Time</TableHead>
+                                            <TableHead>Market ID</TableHead>
+                                            <TableHead>User ID</TableHead>
+                                            <TableHead>Side</TableHead>
+                                            <TableHead>Amount</TableHead>
+                                            <TableHead className="text-right">Shares</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {isLoadingTrades ? (
+                                             Array.from({ length: 5 }).map((_, i) => (
+                                                <TableRow key={i}>
+                                                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                                                    <TableCell><Skeleton className="h-4 w-40" /></TableCell>
+                                                    <TableCell><Skeleton className="h-4 w-40" /></TableCell>
+                                                    <TableCell><Skeleton className="h-6 w-12" /></TableCell>
+                                                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                                                    <TableCell className="text-right"><Skeleton className="h-4 w-16" /></TableCell>
+                                                </TableRow>
+                                            ))
+                                        ) : (
+                                            allTrades.map((trade) => (
+                                                <TableRow key={trade.id}>
+                                                    <TableCell className="text-muted-foreground text-xs">{trade.createdAt ? format(trade.createdAt, 'Pp') : 'N/A'}</TableCell>
+                                                    <TableCell><Link href={`/markets/${trade.marketId}`} className="font-mono text-xs hover:underline">{trade.marketId}</Link></TableCell>
+                                                    <TableCell className="font-mono text-xs">{trade.uid}</TableCell>
+                                                    <TableCell><Badge className={trade.side === 'YES' ? 'bg-blue-100 text-blue-800' : 'bg-pink-100 text-pink-800'}>{trade.side}</Badge></TableCell>
+                                                    <TableCell>{formatCurrency(trade.amount, '')}</TableCell>
+                                                    <TableCell className="text-right">{trade.shares.toFixed(2)}</TableCell>
+                                                </TableRow>
+                                            ))
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
                     <TabsContent value="markets">
                         <Card>
                             <CardHeader>
                                 <CardTitle>Manage Markets</CardTitle>
-                                <CardDescription>View, publish, lock, and resolve markets.</CardDescription>
+                                <CardDescription>View, publish, lock, and resolve markets from the database.</CardDescription>
                             </CardHeader>
                             <CardContent>
                                 <Table>
@@ -46,35 +273,21 @@ export default async function AdminPage() {
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {markets.map(async (market) => {
-                                            const fixture = await getFixtures().then(f => f.find(fix => fix.id === market.fixtureId));
-                                            const homeTeam = fixture ? getTeam(fixture.homeTeamId) : null;
-                                            const awayTeam = fixture ? getTeam(fixture.awayTeamId) : null;
-                                            return (
-                                            <TableRow key={market.id}>
-                                                <TableCell className="font-medium">{homeTeam?.name} vs {awayTeam?.name}</TableCell>
-                                                <TableCell><Badge variant={market.state === 'OPEN' ? 'default' : 'secondary'} className={market.state === 'OPEN' ? 'bg-green-100 text-green-800' : ''}>{market.state}</Badge></TableCell>
-                                                <TableCell>{fixture ? format(fixture.startTimeUtc, 'Pp') : 'N/A'}</TableCell>
-                                                <TableCell>{market.resolution ?? 'N/A'}</TableCell>
-                                                <TableCell>
-                                                    <DropdownMenu>
-                                                        <DropdownMenuTrigger asChild>
-                                                            <Button variant="ghost" className="h-8 w-8 p-0">
-                                                                <span className="sr-only">Open menu</span>
-                                                                <MoreHorizontal className="h-4 w-4" />
-                                                            </Button>
-                                                        </DropdownMenuTrigger>
-                                                        <DropdownMenuContent align="end">
-                                                            <DropdownMenuItem>Publish</DropdownMenuItem>
-                                                            <DropdownMenuItem>Lock</DropdownMenuItem>
-                                                            <DropdownMenuItem>Resolve</DropdownMenuItem>
-                                                            <DropdownMenuItem className="text-red-500">Void</DropdownMenuItem>
-                                                        </DropdownMenuContent>
-                                                    </DropdownMenu>
-                                                </TableCell>
-                                            </TableRow>
-                                            )
-                                        })}
+                                        {isLoadingMarkets || isLoadingFixtures || isLoadingTeams ? (
+                                             Array.from({ length: 5 }).map((_, i) => (
+                                                <TableRow key={i}>
+                                                    <TableCell><Skeleton className="h-4 w-40" /></TableCell>
+                                                    <TableCell><Skeleton className="h-6 w-20" /></TableCell>
+                                                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                                                    <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                                                    <TableCell><Skeleton className="h-8 w-8" /></TableCell>
+                                                </TableRow>
+                                            ))
+                                        ) : (
+                                            markets?.map((market) => (
+                                                <MarketRow key={market.id} market={market} fixtures={fixtures} teams={teams} />
+                                            ))
+                                        )}
                                     </TableBody>
                                 </Table>
                             </CardContent>
@@ -84,8 +297,8 @@ export default async function AdminPage() {
                          <Card>
                             <CardHeader>
                                 <CardTitle>Fixtures</CardTitle>
-                                <CardDescription>Fixtures synced from The Odds API.</CardDescription>
-                            </CardHeader>
+                                <CardDescription>Fixtures stored in the database.</CardDescription>
+                            </Header>
                             <CardContent>
                                <Table>
                                     <TableHeader>
@@ -97,18 +310,20 @@ export default async function AdminPage() {
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {fixtures.map(fixture => {
-                                            const homeTeam = getTeam(fixture.homeTeamId);
-                                            const awayTeam = getTeam(fixture.awayTeamId);
-                                            return(
-                                            <TableRow key={fixture.id}>
-                                                <TableCell>{homeTeam?.name} vs {awayTeam?.name}</TableCell>
-                                                <TableCell>{fixture.competitionId}</TableCell>
-                                                <TableCell>{format(fixture.startTimeUtc, 'Pp')}</TableCell>
-                                                <TableCell><Badge variant="outline">{fixture.status}</Badge></TableCell>
-                                            </TableRow>
-                                            )
-                                        })}
+                                        {isLoadingFixtures ? (
+                                            Array.from({ length: 5 }).map((_, i) => (
+                                                <TableRow key={i}>
+                                                    <TableCell><Skeleton className="h-4 w-40" /></TableCell>
+                                                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                                                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                                                    <TableCell><Skeleton className="h-6 w-20" /></TableCell>
+                                                </TableRow>
+                                            ))
+                                        ) : (
+                                            fixtures?.map(fixture => (
+                                                <FixtureRow key={fixture.id} fixture={fixture} />
+                                            ))
+                                        )}
                                     </TableBody>
                                </Table>
                             </CardContent>
@@ -117,5 +332,5 @@ export default async function AdminPage() {
                 </Tabs>
             </div>
         </div>
-    )
+    );
 }
