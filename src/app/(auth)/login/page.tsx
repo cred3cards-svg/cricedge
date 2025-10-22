@@ -5,6 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useAuth } from '@/firebase';
+import { initiateEmailSignIn } from '@/firebase/non-blocking-login';
+import { useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
     return (
@@ -19,6 +24,29 @@ function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
   }
 
 export default function LoginPage() {
+  const auth = useAuth();
+  const router = useRouter();
+  const { toast } = useToast();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  const handleLogin = async () => {
+    try {
+      initiateEmailSignIn(auth, email, password);
+      toast({
+        title: 'Login Successful',
+        description: "You've been successfully logged in.",
+      });
+      router.push('/');
+    } catch (error: any) {
+      toast({
+        title: 'Login Failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
   return (
     <Card className="mx-auto w-full max-w-sm">
       <CardHeader>
@@ -29,7 +57,7 @@ export default function LoginPage() {
         <div className="grid gap-4">
           <div className="grid gap-2">
             <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" placeholder="m@example.com" required />
+            <Input id="email" type="email" placeholder="m@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
           </div>
           <div className="grid gap-2">
             <div className="flex items-center">
@@ -38,9 +66,9 @@ export default function LoginPage() {
                 Forgot your password?
               </Link>
             </div>
-            <Input id="password" type="password" required />
+            <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
           </div>
-          <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
+          <Button onClick={handleLogin} className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
             Login
           </Button>
           <Button variant="outline" className="w-full">

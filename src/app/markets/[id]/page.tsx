@@ -13,7 +13,15 @@ import { formatCurrency, formatPercentage } from "@/lib/utils";
 
 export default function MarketDetailPage({ params }: { params: { id: string } }) {
   const market = getMarket(params.id);
-  if (!market) notFound();
+  if (!market) {
+      // Since we removed mock data, we'll just show a loading state
+      // A full implementation would fetch this data from Firestore
+      return (
+        <div className="container mx-auto max-w-7xl py-8">
+          <p>Loading market data...</p>
+        </div>
+      )
+  };
 
   const fixture = getFixture(market.fixtureId);
   const pool = getPool(market.id);
@@ -21,7 +29,13 @@ export default function MarketDetailPage({ params }: { params: { id: string } })
   const awayTeam = fixture ? getTeam(fixture.awayTeamId) : null;
   const competition = fixture ? getCompetition(fixture.competitionId) : null;
   
-  if (!fixture || !homeTeam || !awayTeam || !competition || !pool) notFound();
+  if (!fixture || !homeTeam || !awayTeam || !competition || !pool) {
+      return (
+        <div className="container mx-auto max-w-7xl py-8">
+          <p>Loading market data...</p>
+        </div>
+      )
+  };
   
   const homeTeamLogo = getPlaceholderImage(homeTeam.logoId);
   const awayTeamLogo = getPlaceholderImage(awayTeam.logoId);
@@ -138,20 +152,8 @@ export default function MarketDetailPage({ params }: { params: { id: string } })
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {/* Mock Data */}
                   <TableRow>
-                    <TableCell>{format(new Date(), "h:mm:ss a")}</TableCell>
-                    <TableCell><Badge className="bg-blue-100 text-blue-800">YES</Badge></TableCell>
-                    <TableCell>100</TableCell>
-                    <TableCell>{formatCurrency(0.65, '')}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(65)}</TableCell>
-                  </TableRow>
-                   <TableRow>
-                    <TableCell>{format(add(new Date(), {minutes: -2}), "h:mm:ss a")}</TableCell>
-                    <TableCell><Badge className="bg-pink-100 text-pink-800">NO</Badge></TableCell>
-                    <TableCell>250</TableCell>
-                    <TableCell>{formatCurrency(0.34, '')}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(85)}</TableCell>
+                      <TableCell colSpan={5} className="text-center text-muted-foreground">No recent trades.</TableCell>
                   </TableRow>
                 </TableBody>
               </Table>

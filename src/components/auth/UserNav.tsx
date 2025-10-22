@@ -13,15 +13,21 @@ import {
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Landmark, LogOut, User as UserIcon } from 'lucide-react';
-import { useState } from 'react';
+import { useAuth, useUser } from '@/firebase';
+import { signOut } from 'firebase/auth';
+import { Skeleton } from '../ui/skeleton';
 
 export function UserNav() {
-  // Mock authentication state. In a real app, this would come from a context or hook.
-  const [user, setUser] = useState<{ name: string; email: string, handle: string } | null>({
-    name: 'Demo User',
-    email: 'user@example.com',
-    handle: 'demouser',
-  });
+  const auth = useAuth();
+  const { user, isUserLoading } = useUser();
+
+  const handleLogout = () => {
+    signOut(auth);
+  };
+
+  if (isUserLoading) {
+    return <Skeleton className="h-8 w-8 rounded-full" />;
+  }
 
   if (!user) {
     return (
@@ -41,15 +47,15 @@ export function UserNav() {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-8 w-8">
-            <AvatarImage src={`https://avatar.vercel.sh/${user.handle}.png`} alt={`@${user.handle}`} />
-            <AvatarFallback>{user.name.charAt(0).toUpperCase()}</AvatarFallback>
+            <AvatarImage src={user.photoURL ?? `https://avatar.vercel.sh/${user.uid}.png`} alt={`@${user.displayName ?? user.email}`} />
+            <AvatarFallback>{user.email?.charAt(0).toUpperCase()}</AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">{user.name}</p>
+            <p className="text-sm font-medium leading-none">{user.displayName ?? 'Demo User'}</p>
             <p className="text-xs leading-none text-muted-foreground">
               {user.email}
             </p>
@@ -71,7 +77,7 @@ export function UserNav() {
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => setUser(null)}>
+        <DropdownMenuItem onClick={handleLogout}>
           <LogOut className="mr-2 h-4 w-4" />
           <span>Log out</span>
         </DropdownMenuItem>

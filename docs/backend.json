@@ -22,24 +22,12 @@
         "role": {
           "type": "string",
           "description": "User's role (e.g., 'user' or 'admin')."
-        },
-        "kycStatus": {
-          "type": "string",
-          "description": "User's KYC (Know Your Customer) status (e.g., 'none' or 'basic')."
-        },
-        "createdAt": {
-          "type": "string",
-          "description": "Timestamp indicating when the user account was created.",
-          "format": "date-time"
         }
       },
       "required": [
-        "id",
         "email",
         "handle",
-        "role",
-        "kycStatus",
-        "createdAt"
+        "role"
       ]
     },
     "Wallet": {
@@ -239,8 +227,7 @@
         "type",
         "state",
         "feeBps",
-        "createdBy",
-        "publishedAt"
+        "createdBy"
       ]
     },
     "Pool": {
@@ -506,7 +493,8 @@
   "auth": {
     "providers": [
       "password",
-      "anonymous"
+      "anonymous",
+      "google.com"
     ]
   },
   "firestore": {

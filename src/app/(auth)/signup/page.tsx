@@ -6,6 +6,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useAuth } from '@/firebase';
+import { initiateEmailSignUp } from '@/firebase/non-blocking-login';
+import { useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
     return (
@@ -20,6 +25,31 @@ function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
   }
 
 export default function SignupPage() {
+  const auth = useAuth();
+  const router = useRouter();
+  const { toast } = useToast();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [handle, setHandle] = useState('');
+
+  const handleSignup = async () => {
+    try {
+      initiateEmailSignUp(auth, email, password);
+      // In a real app you'd also create a user document in Firestore here.
+      toast({
+        title: 'Account Created',
+        description: 'Your account has been successfully created.',
+      });
+      router.push('/');
+    } catch (error: any) {
+      toast({
+        title: 'Sign-up Failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
   return (
     <Card className="mx-auto w-full max-w-sm">
       <CardHeader>
@@ -30,21 +60,21 @@ export default function SignupPage() {
         <div className="grid gap-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
-              <Label htmlFor="first-name">Handle</Label>
-              <Input id="first-name" placeholder="cricketfan" required />
+              <Label htmlFor="handle">Handle</Label>
+              <Input id="handle" placeholder="cricketfan" required value={handle} onChange={(e) => setHandle(e.target.value)} />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="last-name">Role</Label>
-              <Input id="last-name" placeholder="user" disabled value="user" />
+              <Label htmlFor="role">Role</Label>
+              <Input id="role" placeholder="user" disabled value="user" />
             </div>
           </div>
           <div className="grid gap-2">
             <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" placeholder="m@example.com" required />
+            <Input id="email" type="email" placeholder="m@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
           </div>
           <div className="grid gap-2">
             <Label htmlFor="password">Password</Label>
-            <Input id="password" type="password" />
+            <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
           </div>
           <div className="flex items-center space-x-2">
               <Checkbox id="age-gate" required />
@@ -52,7 +82,7 @@ export default function SignupPage() {
                 I confirm that I am over 18 years old.
               </Label>
           </div>
-          <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
+          <Button onClick={handleSignup} className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
             Create an account
           </Button>
           <Button variant="outline" className="w-full">
