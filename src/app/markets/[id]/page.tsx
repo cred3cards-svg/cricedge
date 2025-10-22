@@ -1,15 +1,18 @@
+
 import { getMarket, getFixture, getTeam, getPool, getCompetition } from "@/lib/data";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import { getPlaceholderImage } from "@/lib/placeholder-images";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { format } from "date-fns";
-import { Clock, Info, Lock, ShieldCheck, Users } from "lucide-react";
+import { format, add } from "date-fns";
+import { Clock, Info, Lock, ShieldCheck, Users, Bot } from "lucide-react";
 import PriceChart from "@/components/market/PriceChart";
 import TradeWidget from "@/components/market/TradeWidget";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatCurrency, formatPercentage } from "@/lib/utils";
+import { getMatchAnalysis } from "@/ai/flows/get-match-analysis";
+import { Progress } from "@/components/ui/progress";
 
 export default async function MarketDetailPage({ params }: { params: { id: string } }) {
   const market = await getMarket(params.id);
@@ -19,8 +22,8 @@ export default async function MarketDetailPage({ params }: { params: { id: strin
 
   const fixture = await getFixture(market.fixtureId);
   const pool = await getPool(market.id);
-  const homeTeam = fixture ? getTeam(fixture.homeTeamId) : null;
-  const awayTeam = fixture ? getTeam(fixture.awayTeamId) : null;
+  const homeTeam = fixture ? await getTeam(fixture.homeTeamId) : null;
+  const awayTeam = fixture ? await getTeam(fixture.awayTeamId) : null;
   const competition = fixture ? getCompetition(fixture.competitionId) : null;
   
   if (!fixture || !homeTeam || !awayTeam || !competition || !pool) {
@@ -30,6 +33,8 @@ export default async function MarketDetailPage({ params }: { params: { id: strin
         </div>
       )
   };
+
+  const analysis = await getMatchAnalysis({ teamA: homeTeam.name, teamB: awayTeam.name });
   
   const homeTeamLogo = getPlaceholderImage(homeTeam.logoId);
   const awayTeamLogo = getPlaceholderImage(awayTeam.logoId);
@@ -72,11 +77,11 @@ export default async function MarketDetailPage({ params }: { params: { id: strin
           <div className="text-sm text-muted-foreground">{competition.name}</div>
           <div className="flex flex-wrap items-center gap-4">
             <h1 className="text-3xl md:text-4xl font-bold tracking-tight font-headline flex items-center gap-3">
-              {homeTeamLogo && <Image src={homeTeamLogo.imageUrl} data-ai-hint={homeTeamLogo.imageHint} alt={homeTeam.name} width={32} height={32} className="rounded-full" />}
+              {homeTeamLogo && <Image src={homeTeamLogo.imageUrl} data-ai-hint={homeTeamLogo.imageHint} alt={homeTeam.name} width={32} height={32} className="rounded-full object-cover" />}
               <span>{homeTeam.name}</span>
               <span className="text-muted-foreground">vs</span>
               <span>{awayTeam.name}</span>
-              {awayTeamLogo && <Image src={awayTeamLogo.imageUrl} data-ai-hint={awayTeamLogo.imageHint} alt={awayTeam.name} width={32} height={32} className="rounded-full" />}
+              {awayTeamLogo && <Image src={awayTeamLogo.imageUrl} data-ai-hint={awayTeamLogo.imageHint} alt={awayTeam.name} width={32} height={32} className="rounded-full object-cover" />}
             </h1>
             {status.badge}
           </div>
@@ -101,6 +106,34 @@ export default async function MarketDetailPage({ params }: { params: { id: strin
           <div className="lg:col-span-1">
             <TradeWidget market={market} pool={pool} homeTeam={homeTeam} awayTeam={awayTeam} />
           </div>
+        </div>
+
+        <div>
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><Bot className="h-6 w-6" /> AI Analysis</CardTitle>
+                    <CardDescription>Powered by Gemini</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                        <h3 className="font-semibold">Match Preview</h3>
+                        <p className="text-sm text-muted-foreground">{analysis.analysis}</p>
+                    </div>
+                     <div className="space-y-2">
+                        <h3 className="font-semibold">Prediction</h3>
+                        <div className="flex items-center gap-4">
+                             <Badge className={analysis.predictedWinner === homeTeam.name ? 'bg-blue-100 text-blue-800' : 'bg-pink-100 text-pink-800'}>{analysis.predictedWinner}</Badge>
+                            <div className="w-full">
+                               <div className="flex justify-between items-center mb-1">
+                                    <span className="text-sm text-muted-foreground">Confidence</span>
+                                    <span className="text-sm font-bold">{formatPercentage(analysis.confidence)}</span>
+                                </div>
+                                <Progress value={analysis.confidence * 100} className="h-2" />
+                            </div>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
         </div>
 
         <div>
@@ -159,3 +192,6 @@ export default async function MarketDetailPage({ params }: { params: { id: strin
     </div>
   );
 }
+
+
+    

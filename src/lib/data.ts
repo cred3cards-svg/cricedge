@@ -1,6 +1,8 @@
+
 import type { Competition, Team, Fixture, Market, Pool, Position, Trade } from '@/lib/types';
 import { getOdds } from './odds-api';
-import { PlaceholderImages } from './placeholder-images';
+import { getCountryFlag } from '@/ai/flows/get-country-flag';
+
 
 // --- MOCK DATA (to be replaced with Firestore) ---
 
@@ -12,17 +14,16 @@ const MOCK_COMPETITIONS: Competition[] = [
     { id: 'cricket_icc_world_cup_womens', name: 'ICC Women\'s World Cup', region: 'International', level: 'international', isActive: true },
 ];
 
-// Create a map for easy lookup
-const teamNameMap: { [key: string]: { id: string, name: string, shortName: string, logoId: string } } = {
-    "Australia": { id: "aus", name: "Australia", shortName: "AUS", logoId: "team-aus" },
-    "India": { id: "ind", name: "India", shortName: "IND", logoId: "team-ind" },
-    "Pakistan": { id: "pak", name: "Pakistan", shortName: "PAK", logoId: "team-pak" },
-    "South Africa": { id: "sa", name: "South Africa", shortName: "SA", logoId: "team-sa" },
-    "New Zealand": { id: "nz", name: "New Zealand", shortName: "NZ", logoId: "team-nz" },
-    "England": { id: "eng", name: "England", shortName: "ENG", logoId: "team-eng" },
-    "Bangladesh": { id: "ban", name: "Bangladesh", shortName: "BAN", logoId: "placeholder-logo" },
-    "West Indies": { id: "wi", name: "West Indies", shortName: "WI", logoId: "placeholder-logo" },
-    "Sri Lanka": { id: "sl", name: "Sri Lanka", shortName: "SL", logoId: "placeholder-logo" },
+const teamNameMap: { [key: string]: { id: string, name: string, shortName: string, country: string } } = {
+    "Australia": { id: "aus", name: "Australia", shortName: "AUS", country: "Australia" },
+    "India": { id: "ind", name: "India", shortName: "IND", country: "India" },
+    "Pakistan": { id: "pak", name: "Pakistan", shortName: "PAK", country: "Pakistan" },
+    "South Africa": { id: "sa", name: "South Africa", shortName: "SA", country: "South Africa" },
+    "New Zealand": { id: "nz", name: "New Zealand", shortName: "NZ", country: "New Zealand" },
+    "England": { id: "eng", name: "England", shortName: "ENG", country: "England" },
+    "Bangladesh": { id: "ban", name: "Bangladesh", shortName: "BAN", country: "Bangladesh" },
+    "West Indies": { id: "wi", name: "West Indies", shortName: "WI", country: "West Indies" },
+    "Sri Lanka": { id: "sl", name: "Sri Lanka", shortName: "SL", country: "Sri Lanka" },
 };
 
 
@@ -32,24 +33,32 @@ export const getCompetitions = (): Competition[] => MOCK_COMPETITIONS;
 export const getCompetition = (id: string): Competition | undefined => MOCK_COMPETITIONS.find(c => c.id === id);
 
 
-export const getTeams = (): Team[] => {
-    // This function can be more dynamic if teams are stored in Firestore
-    return Object.values(teamNameMap).map(t => ({
-        ...t,
-        country: t.name,
-    }));
-};
-export const getTeam = (id: string): Team | undefined => {
-     // In a real app, this would query Firestore. For now, we find by team name in our map.
-    const found = Object.values(teamNameMap).find(t => t.name.toLowerCase() === id.toLowerCase() || t.id.toLowerCase() === id.toLowerCase());
-    if (found) {
+export const getTeams = async (): Promise<Team[]> => {
+    const teams = await Promise.all(Object.values(teamNameMap).map(async (t) => {
+        const flag = await getCountryFlag({ country: t.country });
         return {
-            ...found,
-            country: found.name
-        }
+            ...t,
+            country: t.name,
+            logoId: flag.flagDataUri,
+        };
+    }));
+    return teams;
+};
+
+export const getTeam = async (id: string): Promise<Team | undefined> => {
+    let teamInfo = Object.values(teamNameMap).find(t => t.name.toLowerCase() === id.toLowerCase() || t.id.toLowerCase() === id.toLowerCase());
+
+    if (!teamInfo) {
+        teamInfo = { id: id.toLowerCase(), name: id, shortName: id.substring(0,3).toUpperCase(), country: id };
     }
-    // Return a default team if not found
-    return { id: id.toLowerCase(), name: id, shortName: id.substring(0,3).toUpperCase(), country: id, logoId: 'placeholder-logo' };
+
+    const flag = await getCountryFlag({ country: teamInfo.country });
+    
+    return {
+        ...teamInfo,
+        country: teamInfo.name,
+        logoId: flag.flagDataUri,
+    };
 };
 
 export const getFixtures = async (): Promise<Fixture[]> => {
@@ -138,3 +147,5 @@ export const getPool = async (marketId: string): Promise<Pool | undefined> => {
 
 export const getUserPositions = (userId: string): Position[] => [];
 export const getUserTrades = (userId: string): Trade[] => [];
+
+    

@@ -1,3 +1,4 @@
+
 import Image from 'next/image';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,8 +20,8 @@ export default async function MarketCard({ marketId }: MarketCardProps) {
 
   const fixture = await getFixture(market.fixtureId);
   const pool = await getPool(market.id);
-  const homeTeam = fixture ? getTeam(fixture.homeTeamId) : null;
-  const awayTeam = fixture ? getTeam(fixture.awayTeamId) : null;
+  const homeTeam = fixture ? await getTeam(fixture.homeTeamId) : null;
+  const awayTeam = fixture ? await getTeam(fixture.awayTeamId) : null;
   const competition = fixture ? getCompetition(fixture.competitionId) : null;
 
   if (!fixture || !homeTeam || !awayTeam || !competition || !pool) {
@@ -81,7 +82,7 @@ export default async function MarketCard({ marketId }: MarketCardProps) {
           <div className="flex justify-around items-center">
             <div className="flex flex-col items-center gap-2 text-center">
               {homeTeamLogo && (
-                <Image src={homeTeamLogo.imageUrl} alt={homeTeam.name} width={48} height={48} className="rounded-full bg-muted" data-ai-hint={homeTeamLogo.imageHint} />
+                <Image src={homeTeamLogo.imageUrl} alt={homeTeam.name} width={48} height={48} className="rounded-full bg-muted object-cover" data-ai-hint={homeTeamLogo.imageHint} />
               )}
               <span className="text-sm font-semibold">{homeTeam.shortName}</span>
               <ProbabilityChip probability={pool?.lastPriceYes ?? 0} side="YES" />
@@ -89,7 +90,7 @@ export default async function MarketCard({ marketId }: MarketCardProps) {
             <div className="text-muted-foreground text-sm">vs</div>
             <div className="flex flex-col items-center gap-2 text-center">
               {awayTeamLogo && (
-                <Image src={awayTeamLogo.imageUrl} alt={awayTeam.name} width={48} height={48} className="rounded-full bg-muted" data-ai-hint={awayTeamLogo.imageHint} />
+                <Image src={awayTeamLogo.imageUrl} alt={awayTeam.name} width={48} height={48} className="rounded-full bg-muted object-cover" data-ai-hint={awayTeamLogo.imageHint} />
               )}
               <span className="text-sm font-semibold">{awayTeam.shortName}</span>
               <ProbabilityChip probability={pool?.lastPriceNo ?? 0} side="NO" />
@@ -112,3 +113,5 @@ export default async function MarketCard({ marketId }: MarketCardProps) {
     </Card>
   );
 }
+
+    
