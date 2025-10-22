@@ -4,7 +4,7 @@ import Image from "next/image";
 import { getPlaceholderImage } from "@/lib/placeholder-images";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { format } from "date-fns";
+import { format, add } from "date-fns";
 import { Clock, Info, Lock, ShieldCheck, Users } from "lucide-react";
 import PriceChart from "@/components/market/PriceChart";
 import TradeWidget from "@/components/market/TradeWidget";
