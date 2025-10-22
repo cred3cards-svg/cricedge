@@ -8,7 +8,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { getTeam } from "@/lib/data";
 import { format } from "date-fns";
 import { MoreHorizontal } from "lucide-react";
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
@@ -18,19 +17,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { formatCurrency } from '@/lib/utils';
 import Link from 'next/link';
 
-const FixtureRow = ({ fixture }: { fixture: Fixture }) => {
-    const [homeTeam, setHomeTeam] = useState<Team | null>(null);
-    const [awayTeam, setAwayTeam] = useState<Team | null>(null);
-
-    useEffect(() => {
-        const fetchTeams = async () => {
-            const home = await getTeam(fixture.homeTeamId);
-            const away = await getTeam(fixture.awayTeamId);
-            setHomeTeam(home ?? null);
-            setAwayTeam(away ?? null);
-        }
-        fetchTeams();
-    }, [fixture]);
+const FixtureRow = ({ fixture, teams }: { fixture: Fixture, teams: Team[] | null }) => {
+    const homeTeam = useMemo(() => teams?.find(t => t.id === fixture.homeTeamId), [teams, fixture.homeTeamId]);
+    const awayTeam = useMemo(() => teams?.find(t => t.id === fixture.awayTeamId), [teams, fixture.awayTeamId]);
 
     if (!homeTeam || !awayTeam) {
         return (
@@ -241,7 +230,7 @@ export default function AdminPage() {
                                         ) : (
                                             allTrades.map((trade) => (
                                                 <TableRow key={trade.id}>
-                                                    <TableCell className="text-muted-foreground text-xs">{trade.createdAt ? format(trade.createdAt, 'Pp') : 'N/A'}</TableCell>
+                                                    <TableCell className="text-muted-foreground text-xs">{trade.createdAt ? format(new Date(trade.createdAt), 'Pp') : 'N/A'}</TableCell>
                                                     <TableCell><Link href={`/markets/${trade.marketId}`} className="font-mono text-xs hover:underline">{trade.marketId}</Link></TableCell>
                                                     <TableCell className="font-mono text-xs">{trade.uid}</TableCell>
                                                     <TableCell><Badge className={trade.side === 'YES' ? 'bg-blue-100 text-blue-800' : 'bg-pink-100 text-pink-800'}>{trade.side}</Badge></TableCell>
@@ -275,13 +264,7 @@ export default function AdminPage() {
                                     <TableBody>
                                         {isLoadingMarkets || isLoadingFixtures || isLoadingTeams ? (
                                              Array.from({ length: 5 }).map((_, i) => (
-                                                <TableRow key={i}>
-                                                    <TableCell><Skeleton className="h-4 w-40" /></TableCell>
-                                                    <TableCell><Skeleton className="h-6 w-20" /></TableCell>
-                                                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                                                    <TableCell><Skeleton className="h-4 w-16" /></TableCell>
-                                                    <TableCell><Skeleton className="h-8 w-8" /></TableCell>
-                                                </TableRow>
+                                                <MarketRow key={i} market={{} as Market} fixtures={null} teams={null} />
                                             ))
                                         ) : (
                                             markets?.map((market) => (
@@ -298,7 +281,7 @@ export default function AdminPage() {
                             <CardHeader>
                                 <CardTitle>Fixtures</CardTitle>
                                 <CardDescription>Fixtures stored in the database.</CardDescription>
-                            </Header>
+                            </CardHeader>
                             <CardContent>
                                <Table>
                                     <TableHeader>
@@ -312,16 +295,11 @@ export default function AdminPage() {
                                     <TableBody>
                                         {isLoadingFixtures ? (
                                             Array.from({ length: 5 }).map((_, i) => (
-                                                <TableRow key={i}>
-                                                    <TableCell><Skeleton className="h-4 w-40" /></TableCell>
-                                                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                                                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                                                    <TableCell><Skeleton className="h-6 w-20" /></TableCell>
-                                                </TableRow>
+                                                <FixtureRow key={i} fixture={{} as Fixture} teams={null} />
                                             ))
                                         ) : (
                                             fixtures?.map(fixture => (
-                                                <FixtureRow key={fixture.id} fixture={fixture} />
+                                                <FixtureRow key={fixture.id} fixture={fixture} teams={teams} />
                                             ))
                                         )}
                                     </TableBody>
@@ -333,4 +311,5 @@ export default function AdminPage() {
             </div>
         </div>
     );
-}
+
+    
