@@ -4,15 +4,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { getCompetition, getFixture, getMarket, getTeam, getUserPositions, getUserTrades } from "@/lib/data";
+import { getFixture, getMarket, getTeam, getUserPositions, getUserTrades } from "@/lib/data";
 import { formatCurrency, formatPercentage } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { formatDistanceToNow, fromUnixTime } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowDown, ArrowUp, Coins, Gift, TrendingUp } from "lucide-react";
+import { Coins, Gift, TrendingUp } from "lucide-react";
 import { useEffect, useState } from "react";
-import type { Position, Trade, Fixture } from "@/lib/types";
+import type { Position, Trade, Fixture, Team } from "@/lib/types";
 
 
 export default function PortfolioPage() {
@@ -35,6 +35,8 @@ export default function PortfolioPage() {
 
     const PositionRow = ({ pos }: { pos: Position }) => {
         const [fixture, setFixture] = useState<Fixture | undefined>(undefined);
+        const [homeTeam, setHomeTeam] = useState<Team | null>(null);
+        const [awayTeam, setAwayTeam] = useState<Team | null>(null);
         
         useEffect(() => {
             const fetchFixture = async () => {
@@ -42,13 +44,15 @@ export default function PortfolioPage() {
                 if (market) {
                     const f = await getFixture(market.fixtureId);
                     setFixture(f);
+                    if (f) {
+                        setHomeTeam(getTeam(f.homeTeamId));
+                        setAwayTeam(getTeam(f.awayTeamId));
+                    }
                 }
             }
             fetchFixture();
         }, [pos.marketId]);
 
-        const homeTeam = fixture ? getTeam(fixture.homeTeamId) : null;
-        const awayTeam = fixture ? getTeam(fixture.awayTeamId) : null;
         const isYes = pos.yesShares > 0;
         const pnlClass = pos.unrealizedPnl > 0 ? "text-green-600" : "text-red-600";
 
@@ -74,6 +78,8 @@ export default function PortfolioPage() {
 
     const TradeRow = ({ trade }: { trade: Trade }) => {
         const [fixture, setFixture] = useState<Fixture | undefined>(undefined);
+        const [homeTeam, setHomeTeam] = useState<Team | null>(null);
+        const [awayTeam, setAwayTeam] = useState<Team | null>(null);
         
         useEffect(() => {
             const fetchFixture = async () => {
@@ -81,13 +87,14 @@ export default function PortfolioPage() {
                 if (market) {
                     const f = await getFixture(market.fixtureId);
                     setFixture(f);
+                    if (f) {
+                        setHomeTeam(getTeam(f.homeTeamId));
+                        setAwayTeam(getTeam(f.awayTeamId));
+                    }
                 }
             }
             fetchFixture();
         }, [trade.marketId]);
-
-        const homeTeam = fixture ? getTeam(fixture.homeTeamId) : null;
-        const awayTeam = fixture ? getTeam(fixture.awayTeamId) : null;
 
         if (!homeTeam || !awayTeam) return null;
         
