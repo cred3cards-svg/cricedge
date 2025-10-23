@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -9,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
 import { MoreHorizontal, Loader2 } from "lucide-react";
-import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, collectionGroup, getDocs, query } from 'firebase/firestore';
 import type { User, Trade, Market, Fixture, Team } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -89,13 +90,10 @@ export default function AdminPage() {
     const firestore = useFirestore();
     const router = useRouter();
     
-    // This state is a placeholder for a real admin auth check
     const [isAdmin, setIsAdmin] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        // In a real app, you'd have a more robust way of checking admin status.
-        // For this demo, we'll use sessionStorage.
         const adminSession = sessionStorage.getItem('admin-authenticated');
         if (adminSession === 'true') {
             setIsAdmin(true);
@@ -106,7 +104,7 @@ export default function AdminPage() {
     }, [router]);
 
     const usersQuery = useMemoFirebase(() => {
-        if (!firestore || !isAdmin) return null; // Don't query if not admin
+        if (!firestore || !isAdmin) return null;
         return collection(firestore, 'users');
     }, [firestore, isAdmin]);
     const { data: users, isLoading: isLoadingUsers } = useCollection<User>(usersQuery);
@@ -134,7 +132,7 @@ export default function AdminPage() {
     const [isLoadingTrades, setIsLoadingTrades] = useState(true);
 
     useEffect(() => {
-        if (!firestore || !isAdmin) return; // Don't run if not admin
+        if (!firestore || !isAdmin) return;
 
         const fetchAllTrades = async () => {
             setIsLoadingTrades(true);
@@ -144,8 +142,7 @@ export default function AdminPage() {
             querySnapshot.forEach((doc) => {
                 trades.push({ ...doc.data(), id: doc.id } as Trade);
             });
-            // Sort trades by creation time, newest first
-            trades.sort((a, b) => (new Date(b.createdAt).getTime() || 0) - (new Date(a.createdAt).getTime() || 0));
+            trades.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
             setAllTrades(trades);
             setIsLoadingTrades(false);
         };
@@ -307,7 +304,7 @@ export default function AdminPage() {
                             <CardHeader>
                                 <CardTitle>Fixtures</CardTitle>
                                 <CardDescription>Fixtures stored in the database.</CardDescription>
-                            </Header>
+                            </CardHeader>
                             <CardContent>
                                <Table>
                                     <TableHeader>
@@ -338,3 +335,5 @@ export default function AdminPage() {
         </div>
     );
 }
+
+    
