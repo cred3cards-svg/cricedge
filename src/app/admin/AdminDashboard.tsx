@@ -11,10 +11,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
 import { MoreHorizontal, Loader2 } from "lucide-react";
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { useCollection, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, doc } from 'firebase/firestore';
 import type { User, Trade, Market, Fixture, Team } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import { formatCurrency, formatPercentage } from '@/lib/utils';
+import { formatDistanceToNow } from 'date-fns';
 
 const FixtureRow = ({ fixture, teams }: { fixture: Fixture, teams: Team[] | null }) => {
     const homeTeam = useMemo(() => teams?.find(t => t.id === fixture.homeTeamId), [teams, fixture.homeTeamId]);
@@ -92,10 +94,17 @@ export default function AdminDashboard() {
     const [isLoading, setIsLoading] = useState(true);
     const [isAdmin, setIsAdmin] = useState(false);
 
-    // Gate queries on isAdmin state. They will be null until isAdmin is true.
-    const usersQuery = null; // Listing users is forbidden by client rules.
-    const { data: users, isLoading: isLoadingUsers } = useCollection<User>(usersQuery);
+    // --- Hardcode a demo user ID to fetch specific data ---
+    const demoUserId = 'cricket_fan_123';
 
+    // Fetch a single user's document.
+    const userQuery = useMemoFirebase(() => (firestore && isAdmin ? doc(firestore, 'users', demoUserId) : null), [firestore, isAdmin]);
+    const { data: singleUser, isLoading: isLoadingUsers } = useDoc<User>(userQuery);
+
+    // Fetch trades for that single user.
+    const tradesQuery = useMemoFirebase(() => (firestore && isAdmin ? collection(firestore, `users/${demoUserId}/trades`) : null), [firestore, isAdmin]);
+    const { data: userTrades, isLoading: isLoadingTrades } = useCollection<Trade>(tradesQuery);
+    
     const marketsQuery = useMemoFirebase(() => (firestore && isAdmin ? collection(firestore, 'markets') : null), [firestore, isAdmin]);
     const { data: markets, isLoading: isLoadingMarkets } = useCollection<Market>(marketsQuery);
     
@@ -105,11 +114,6 @@ export default function AdminDashboard() {
     const teamsQuery = useMemoFirebase(() => (firestore && isAdmin ? collection(firestore, 'teams') : null), [firestore, isAdmin]);
     const { data: teams, isLoading: isLoadingTeams } = useCollection<Team>(teamsQuery);
     
-    // All trades must be loaded via a secure backend function (e.g., a Cloud Function)
-    // that uses a collectionGroup query. Client-side fetching is not secure or permitted.
-    const [allTrades, setAllTrades] = useState<Trade[]>([]);
-    const [isLoadingTrades, setIsLoadingTrades] = useState(false);
-
     useEffect(() => {
         const checkAdminAuth = () => {
             const adminSession = sessionStorage.getItem('admin-authenticated');
@@ -159,7 +163,7 @@ export default function AdminDashboard() {
                         <Card>
                             <CardHeader>
                                 <CardTitle>User Management</CardTitle>
-                                <CardDescription>View and manage all registered users.</CardDescription>
+                                <CardDescription>Displaying a single demo user. A secure backend function is required to list all users.</CardDescription>
                             </CardHeader>
                             <CardContent>
                                 <Table>
@@ -172,11 +176,24 @@ export default function AdminDashboard() {
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        <TableRow>
-                                            <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
-                                                Admin user list must be loaded via a secure backend function.
-                                            </TableCell>
-                                        </TableRow>
+                                        {isLoadingUsers ? (
+                                            <TableRow>
+                                                <TableCell colSpan={4}><Skeleton className="h-4 w-full" /></TableCell>
+                                            </TableRow>
+                                        ) : singleUser ? (
+                                            <TableRow>
+                                                <TableCell>{singleUser.email}</TableCell>
+                                                <TableCell>{singleUser.handle}</TableCell>
+                                                <TableCell><Badge variant="outline">{singleUser.role}</Badge></TableCell>
+                                                <TableCell>{singleUser.id}</TableCell>
+                                            </TableRow>
+                                        ) : (
+                                            <TableRow>
+                                                <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                                                    Could not load demo user.
+                                                </TableCell>
+                                            </TableRow>
+                                        )}
                                     </TableBody>
                                 </Table>
                             </CardContent>
@@ -186,7 +203,7 @@ export default function AdminDashboard() {
                         <Card>
                             <CardHeader>
                                 <CardTitle>All Trades</CardTitle>
-                                <CardDescription>A log of every trade placed across all markets.</CardDescription>
+                                <CardDescription>Displaying trades for a single demo user. A secure backend function is required to list all trades.</CardDescription>
                             </CardHeader>
                             <CardContent>
                                 <Table>
@@ -201,11 +218,35 @@ export default function AdminDashboard() {
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        <TableRow>
-                                            <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                                                Admin trade list must be loaded via a secure backend function.
-                                            </TableCell>
-                                        </TableRow>
+                                        {isLoadingTrades ? (
+                                             Array.from({ length: 3 }).map((_, i) => (
+                                                <TableRow key={i}>
+                                                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                                                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                                                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                                                    <TableCell><Skeleton className="h-6 w-12" /></TableCell>
+                                                    <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                                                    <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                                                </TableRow>
+                                            ))
+                                        ) : userTrades && userTrades.length > 0 ? (
+                                            userTrades.map(trade => (
+                                                <TableRow key={trade.id}>
+                                                    <TableCell>{formatDistanceToNow(new Date(trade.createdAt), { addSuffix: true })}</TableCell>
+                                                    <TableCell className="font-mono text-xs">{trade.marketId}</TableCell>
+                                                    <TableCell className="font-mono text-xs">{trade.uid}</TableCell>
+                                                    <TableCell><Badge variant="outline">{trade.side}</Badge></TableCell>
+                                                    <TableCell>{formatCurrency(trade.amount, '')}</TableCell>
+                                                    <TableCell className="text-right">{trade.shares.toFixed(2)}</TableCell>
+                                                </TableRow>
+                                            ))
+                                        ) : (
+                                            <TableRow>
+                                                <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                                                    No trades found for demo user.
+                                                </TableCell>
+                                            </TableRow>
+                                        )}
                                     </TableBody>
                                 </Table>
                             </CardContent>
@@ -274,10 +315,21 @@ export default function AdminDashboard() {
                             </CardContent>
                         </Card>
                     </TabsContent>
+                    <TabsContent value="audit">
+                         <Card>
+                            <CardHeader>
+                                <CardTitle>Audit Log</CardTitle>
+                                <CardDescription>This feature is not yet implemented.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-center py-8 text-muted-foreground">
+                                    Audit logging requires a secure backend implementation.
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
                 </Tabs>
             </div>
         </div>
     );
 }
-
-    
