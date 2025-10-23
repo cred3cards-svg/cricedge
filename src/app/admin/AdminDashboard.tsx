@@ -89,9 +89,11 @@ export default function AdminDashboard() {
     const firestore = useFirestore();
     const router = useRouter();
     
-    const [isLoading, setIsLoading] = useState(true);
+    // This state gates all data fetching until the admin is authenticated.
     const [isAdmin, setIsAdmin] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
 
+    // Queries are initialized to `null` and will not run until `isAdmin` is true.
     const marketsQuery = useMemoFirebase(() => (firestore && isAdmin ? collection(firestore, 'markets') : null), [firestore, isAdmin]);
     const { data: markets, isLoading: isLoadingMarkets } = useCollection<Market>(marketsQuery);
     
@@ -101,21 +103,18 @@ export default function AdminDashboard() {
     const teamsQuery = useMemoFirebase(() => (firestore && isAdmin ? collection(firestore, 'teams') : null), [firestore, isAdmin]);
     const { data: teams, isLoading: isLoadingTeams } = useCollection<Team>(teamsQuery);
     
+    // Check for admin authentication on the client side.
     useEffect(() => {
-        const checkAdminAuth = () => {
-            const adminSession = sessionStorage.getItem('admin-authenticated');
-            if (adminSession !== 'true') {
-                router.push('/admin/login');
-                return;
-            }
-            
+        const adminSession = sessionStorage.getItem('admin-authenticated');
+        if (adminSession !== 'true') {
+            router.push('/admin/login');
+        } else {
             setIsAdmin(true);
-            setIsLoading(false); 
-        };
-
-        checkAdminAuth();
+        }
+        setIsLoading(false);
     }, [router]);
 
+    // Show a loading spinner while checking for the session.
     if (isLoading) {
         return (
             <div className="flex h-screen w-full items-center justify-center">
@@ -124,6 +123,7 @@ export default function AdminDashboard() {
         );
     }
     
+    // Render nothing if not an admin (will be redirected shortly).
     if (!isAdmin) {
       return null; 
     }

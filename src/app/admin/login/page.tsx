@@ -17,8 +17,8 @@ export default function AdminLoginPage() {
 
   const handleLogin = () => {
     if (username === 'admin' && password === 'admin') {
-      // In a real application, you would use a more secure method.
-      // For this demo, we'll use sessionStorage.
+      // In a real application, you would use a more secure method like custom claims.
+      // For this demo, we'll use sessionStorage to track the admin session.
       sessionStorage.setItem('admin-authenticated', 'true');
       toast({
         title: 'Admin Login Successful',
