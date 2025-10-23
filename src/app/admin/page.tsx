@@ -145,15 +145,16 @@ export default function AdminPage() {
                 querySnapshot.forEach((doc) => {
                     trades.push({ ...doc.data(), id: doc.id } as Trade);
                 });
-                trades.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+                trades.sort((a, b) => (new Date(b.createdAt).getTime()) - (new Date(a.createdAt).getTime()));
                 setAllTrades(trades);
-                setIsLoadingTrades(false);
             } catch (error) {
+                console.error("Firestore permission error fetching trades:", error);
                 const contextualError = new FirestorePermissionError({
                     operation: 'list',
                     path: 'trades', // path for a collection group query
                 });
                 errorEmitter.emit('permission-error', contextualError);
+            } finally {
                 setIsLoadingTrades(false);
             }
         };
@@ -170,7 +171,6 @@ export default function AdminPage() {
         );
     }
     
-    // Only render the content if the user is an admin
     if (!isAdmin) {
       return null;
     }
