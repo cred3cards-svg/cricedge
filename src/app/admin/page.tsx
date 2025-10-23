@@ -37,7 +37,7 @@ const FixtureRow = ({ fixture, teams }: { fixture: Fixture, teams: Team[] | null
          <TableRow key={fixture.id}>
             <TableCell>{homeTeam?.name} vs {awayTeam?.name}</TableCell>
             <TableCell>{fixture.competitionId}</TableCell>
-            <TableCell>{format(fixture.startTimeUtc, 'Pp')}</TableCell>
+            <TableCell>{format(new Date(fixture.startTimeUtc), 'Pp')}</TableCell>
             <TableCell><Badge variant="outline">{fixture.status}</Badge></TableCell>
         </TableRow>
     )
@@ -64,7 +64,7 @@ const MarketRow = ({ market, fixtures, teams }: { market: Market, fixtures: Fixt
          <TableRow key={market.id}>
             <TableCell className="font-medium">{homeTeam?.name} vs {awayTeam?.name}</TableCell>
             <TableCell><Badge variant={market.state === 'OPEN' ? 'default' : 'secondary'} className={market.state === 'OPEN' ? 'bg-green-100 text-green-800' : ''}>{market.state}</Badge></TableCell>
-            <TableCell>{fixture ? format(fixture.startTimeUtc, 'Pp') : 'N/A'}</TableCell>
+            <TableCell>{fixture ? format(new Date(fixture.startTimeUtc), 'Pp') : 'N/A'}</TableCell>
             <TableCell>{market.resolution ?? 'N/A'}</TableCell>
             <TableCell>
                 <DropdownMenu>
@@ -335,3 +335,5 @@ export default function AdminPage() {
         </div>
     );
 }
+
+    
