@@ -25,6 +25,7 @@ export type AdminTrade = Pick<Trade, 'id' | 'uid' | 'marketId' | 'side' | 'amoun
 
 // API functions (names MUST match exports)
 export const listUsers         = () => callAdmin<{rows:AdminUser[]}>('listUsers');
+export const adminListUsers    = () => callAdmin<{rows:AdminUser[]}>('listUsers');
 export const adminListMarkets  = (p?:{state?:string}) => callAdmin<{rows:AdminMarket[]}>('adminListMarkets', p);
 export const adminListTeams    = () => callAdmin<{rows:Team[]}>('adminListTeams');
 export const adminListFixtures = (p?:{dateFrom?:string; dateTo?:string}) => callAdmin<AdminFixture[]>('adminListFixtures', p);
