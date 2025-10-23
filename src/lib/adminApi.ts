@@ -30,8 +30,8 @@ export async function adminListUsers(): Promise<{ rows: AdminUser[] }> {
     return callAdmin('listUsers');
 }
 
-export function listMarkets(payload?: { state?: Market['state'] }): Promise<AdminMarket[]> {
-    return callAdmin('adminListMarkets', payload);
+export function listMarkets(params?: { state?: string }): Promise<{rows: AdminMarket[]}> {
+    return callAdmin('adminListMarkets', params);
 }
 
 export function listFixtures(payload?: { dateFrom?: string; dateTo?: string }): Promise<AdminFixture[]> {
@@ -42,7 +42,6 @@ export function listTrades(): Promise<AdminTrade[]> {
     return callAdmin('adminListTrades');
 }
 
-export function listTeams(): Promise<Team[]> {
+export function listTeams(): Promise<{rows: Team[]}> {
     return callAdmin('adminListTeams');
 }
-

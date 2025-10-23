@@ -1,7 +1,6 @@
 
 'use client';
 
-import { useMemo } from 'react';
 import { AuthGate } from '@/components/auth/AuthGate';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -9,24 +8,11 @@ import { AdminUsersTable } from '@/components/admin/AdminUsersTable';
 import { AdminMarketsTable } from '@/components/admin/AdminMarketsTable';
 import { AdminFixturesTable } from '@/components/admin/AdminFixturesTable';
 import { AdminTradesTable } from '@/components/admin/AdminTradesTable';
-import { listTeams } from '@/lib/adminApi';
-import { useQuery } from '@tanstack/react-query';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 const queryClient = new QueryClient();
 
 function AdminDashboard() {
-    // Pre-fetch teams for fixture table lookup, as this is public data.
-    const { data: teamsData } = useQuery({
-        queryKey: ['admin-teams'],
-        queryFn: listTeams
-    });
-
-    const teamsMap = useMemo(() => {
-        if (!teamsData) return new Map<string, string>();
-        return new Map(teamsData.map(team => [team.id, team.name]));
-    }, [teamsData]);
-
     return (
         <div className="container mx-auto py-8">
             <header className="mb-8">
@@ -70,7 +56,7 @@ function AdminDashboard() {
                             <CardDescription>View, publish, lock, and resolve markets.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <AdminMarketsTable teamsMap={teamsMap} />
+                            <AdminMarketsTable teamsMap={new Map()} />
                         </CardContent>
                     </Card>
                 </TabsContent>
@@ -81,7 +67,7 @@ function AdminDashboard() {
                             <CardDescription>View upcoming and past fixtures.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                           <AdminFixturesTable teamsMap={teamsMap} />
+                           <AdminFixturesTable />
                         </CardContent>
                     </Card>
                 </TabsContent>

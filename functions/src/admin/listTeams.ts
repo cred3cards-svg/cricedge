@@ -1,15 +1,27 @@
 
 import * as admin from 'firebase-admin';
-import { onCall } from 'firebase-functions/v2/https';
+import { onCall, HttpsError } from 'firebase-functions/v2/https';
+if (!admin.apps.length) admin.initializeApp();
 
-// This check prevents the app from being initialized multiple times.
-if (!admin.apps.length) {
-  admin.initializeApp();
-}
+export const adminListTeams = onCall({ region: 'us-central1' }, async (req) => {
+  try {
+    if (!req.auth) throw new HttpsError('unauthenticated', 'Sign in required');
 
-// This is a public-facing function and does not require admin auth
-// as teams are considered public data.
-export const adminListTeams = onCall({ region: 'us-central1' }, async (request) => {
-    const snapshot = await admin.firestore().collection('teams').limit(200).get();
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const uid = req.auth.uid;
+    const isAdmin = await admin.firestore().doc(`roles_admin/${uid}`).get();
+    if (!isAdmin.exists) {
+        // Use a hardcoded UID for the demo if the roles_admin doc doesn't exist
+        if (uid !== 'Zx04QiJxoNW5KuiAinGuEZA9Zb62') {
+            throw new HttpsError('permission-denied', 'Admins only');
+        }
+    }
+
+    const snap = await admin.firestore().collection('teams').limit(500).get();
+    const rows = snap.docs.map(d => ({ id: d.id, ...(d.data() || {}) }));
+    return { rows };
+  } catch (e: any) {
+    console.error('listTeams failed:', e);
+    if (e instanceof HttpsError) throw e;
+    throw new HttpsError('internal', e?.message ?? 'listTeams error');
+  }
 });

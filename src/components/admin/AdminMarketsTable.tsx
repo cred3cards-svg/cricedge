@@ -57,8 +57,8 @@ export function AdminMarketsTable({ teamsMap }: { teamsMap: Map<string, string> 
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {data.length === 0 && <TableRow><TableCell colSpan={4} className="text-center">No markets found.</TableCell></TableRow>}
-                        {data.map((market) => (
+                        {data.rows.length === 0 && <TableRow><TableCell colSpan={4} className="text-center">No markets found.</TableCell></TableRow>}
+                        {data.rows.map((market) => (
                             <TableRow key={market.id}>
                                 <TableCell className="font-mono text-xs">{market.id}</TableCell>
                                 <TableCell><Badge variant={market.state === 'OPEN' ? 'default' : 'secondary'}>{market.state}</Badge></TableCell>

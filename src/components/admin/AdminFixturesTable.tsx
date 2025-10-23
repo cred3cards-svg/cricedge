@@ -2,20 +2,32 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { listFixtures } from '@/lib/adminApi';
+import { listFixtures, listTeams } from '@/lib/adminApi';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import Loading from './Loading';
 import ErrorMessage from './ErrorMessage';
 import { format } from 'date-fns';
 import { Badge } from '../ui/badge';
+import { useMemo } from 'react';
 
-export function AdminFixturesTable({ teamsMap }: { teamsMap: Map<string, string> }) {
+export function AdminFixturesTable() {
+    const { data: teamsData, isLoading: isLoadingTeams } = useQuery({
+        queryKey: ['admin-teams'],
+        queryFn: listTeams
+    });
+
+    const teamsMap = useMemo(() => {
+        if (!teamsData) return new Map<string, string>();
+        return new Map(teamsData.rows.map(team => [team.id, team.name]));
+    }, [teamsData]);
+
     const { data, error, isLoading } = useQuery({
         queryKey: ['admin-fixtures'],
         queryFn: listFixtures,
+        enabled: !isLoadingTeams, // Only fetch fixtures after teams are loaded
     });
     
-    if (isLoading) return <Loading message="Fetching fixtures..." />;
+    if (isLoading || isLoadingTeams) return <Loading message="Fetching fixtures..." />;
     if (error) return <ErrorMessage error={error} />;
     if (!data || data.length === 0) return <p className="py-8 text-center text-muted-foreground">No fixtures found.</p>;
 
