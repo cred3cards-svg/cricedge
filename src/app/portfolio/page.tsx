@@ -1,31 +1,154 @@
+
 'use client';
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { getFixture, getMarket, getTeam, getUserPositions, getUserTrades } from "@/lib/data";
-import { formatCurrency, formatPercentage } from "@/lib/utils";
+import { getFixture, getMarket, getTeam } from "@/lib/data";
+import { formatCurrency } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
-import { formatDistanceToNow, fromUnixTime } from "date-fns";
+import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import { Coins, Gift, TrendingUp } from "lucide-react";
+import { Coins, Gift, Loader2, TrendingUp } from "lucide-react";
 import { useEffect, useState } from "react";
-import type { Position, Trade, Fixture, Team } from "@/lib/types";
+import type { Position, Trade, Fixture, Team, Wallet } from "@/lib/types";
+import { useCollection, useDoc, useFirestore, useUser, useMemoFirebase } from "@/firebase";
+import { collection, doc } from "firebase/firestore";
+import { Skeleton } from "@/components/ui/skeleton";
+
+function PositionRow({ pos }: { pos: Position }) {
+    const [fixture, setFixture] = useState<Fixture | undefined>(undefined);
+    const [homeTeam, setHomeTeam] = useState<Team | null>(null);
+    const [awayTeam, setAwayTeam] = useState<Team | null>(null);
+
+    useEffect(() => {
+        const fetchFixture = async () => {
+            const market = await getMarket(pos.marketId);
+            if (market) {
+                const f = await getFixture(market.fixtureId);
+                setFixture(f);
+                if (f) {
+                    const ht = await getTeam(f.homeTeamId);
+                    const at = await getTeam(f.awayTeamId);
+                    setHomeTeam(ht);
+                    setAwayTeam(at);
+                }
+            }
+        }
+        fetchFixture();
+    }, [pos.marketId]);
+
+    if (!homeTeam || !awayTeam) {
+        return (
+             <TableRow>
+                <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                <TableCell><Skeleton className="h-6 w-12" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                <TableCell className="text-right"><Skeleton className="h-4 w-16" /></TableCell>
+            </TableRow>
+        );
+    }
+
+    const isYes = pos.yesShares > 0;
+    const pnlClass = pos.unrealizedPnl >= 0 ? "text-green-600" : "text-red-600";
+
+    return (
+        <TableRow>
+            <TableCell>
+                <Link href={`/markets/${pos.marketId}`} className="font-medium hover:underline">
+                    {homeTeam.shortName} vs {awayTeam.shortName}
+                </Link>
+            </TableCell>
+            <TableCell><Badge className={isYes ? 'bg-blue-100 text-blue-800' : 'bg-pink-100 text-pink-800'}>{isYes ? 'YES' : 'NO'}</Badge></TableCell>
+            <TableCell>{(isYes ? pos.yesShares : pos.noShares).toFixed(2)}</TableCell>
+            <TableCell>{formatCurrency(isYes ? pos.avgPriceYes : pos.avgPriceNo, '')}</TableCell>
+            <TableCell>{formatCurrency(0.65, '')}</TableCell>
+            <TableCell className={`text-right font-medium ${pnlClass}`}>
+                {pos.unrealizedPnl >= 0 ? '+' : ''}{formatCurrency(pos.unrealizedPnl)}
+            </TableCell>
+        </TableRow>
+    )
+}
+
+function TradeRow({ trade }: { trade: Trade }) {
+    const [fixture, setFixture] = useState<Fixture | undefined>(undefined);
+    const [homeTeam, setHomeTeam] = useState<Team | null>(null);
+    const [awayTeam, setAwayTeam] = useState<Team | null>(null);
+
+    useEffect(() => {
+        const fetchFixture = async () => {
+            const market = await getMarket(trade.marketId);
+            if (market) {
+                const f = await getFixture(market.fixtureId);
+                setFixture(f);
+                if (f) {
+                    const ht = await getTeam(f.homeTeamId);
+                    const at = await getTeam(f.awayTeamId);
+                    setHomeTeam(ht);
+                    setAwayTeam(at);
+                }
+            }
+        }
+        fetchFixture();
+    }, [trade.marketId]);
+
+     if (!homeTeam || !awayTeam) {
+        return (
+             <TableRow>
+                <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                <TableCell><Skeleton className="h-6 w-12" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                <TableCell className="text-right"><Skeleton className="h-4 w-20" /></TableCell>
+            </TableRow>
+        );
+    }
+    
+    return (
+        <TableRow>
+            <TableCell className="text-muted-foreground text-xs">{trade.createdAt ? formatDistanceToNow(new Date(trade.createdAt), { addSuffix: true}) : 'N/A'}</TableCell>
+            <TableCell>
+                <Link href={`/markets/${trade.marketId}`} className="font-medium hover:underline">
+                    {homeTeam.shortName} vs {awayTeam.shortName}
+                </Link>
+            </TableCell>
+            <TableCell><Badge className={trade.side === 'YES' ? 'bg-blue-100 text-blue-800' : 'bg-pink-100 text-pink-800'}>{trade.side}</Badge></TableCell>
+            <TableCell>{formatCurrency(trade.amount)}</TableCell>
+            <TableCell>{trade.shares.toFixed(2)}</TableCell>
+            <TableCell className="text-right">{formatCurrency(trade.avgPrice, '')}</TableCell>
+        </TableRow>
+    )
+}
 
 
 export default function PortfolioPage() {
-    const [positions, setPositions] = useState<Position[]>([]);
-    const [trades, setTrades] = useState<Trade[]>([]);
     const { toast } = useToast();
+    const { user, isUserLoading } = useUser();
+    const firestore = useFirestore();
 
-    useEffect(() => {
-        // In a real app, you'd fetch this from Firestore based on the logged-in user
-        setPositions(getUserPositions('user-1'));
-        setTrades(getUserTrades('user-1'));
-    }, []);
+    const walletRef = useMemoFirebase(() => {
+        if (!user || !firestore) return null;
+        return doc(firestore, `wallets/${user.uid}`);
+    }, [firestore, user]);
+    const { data: wallet, isLoading: isLoadingWallet } = useDoc<Wallet>(walletRef);
 
+    const positionsRef = useMemoFirebase(() => {
+        if (!user || !firestore) return null;
+        return collection(firestore, `users/${user.uid}/positions`);
+    }, [firestore, user]);
+    const { data: positions, isLoading: isLoadingPositions } = useCollection<Position>(positionsRef);
+
+    const tradesRef = useMemoFirebase(() => {
+        if (!user || !firestore) return null;
+        return collection(firestore, `users/${user.uid}/trades`);
+    }, [firestore, user]);
+    const { data: trades, isLoading: isLoadingTrades } = useCollection<Trade>(tradesRef);
+    
     const handleFaucet = () => {
         toast({
             title: "Success!",
@@ -33,86 +156,27 @@ export default function PortfolioPage() {
         })
     }
 
-    const PositionRow = ({ pos }: { pos: Position }) => {
-        const [fixture, setFixture] = useState<Fixture | undefined>(undefined);
-        const [homeTeam, setHomeTeam] = useState<Team | null>(null);
-        const [awayTeam, setAwayTeam] = useState<Team | null>(null);
-        
-        useEffect(() => {
-            const fetchFixture = async () => {
-                const market = await getMarket(pos.marketId);
-                if (market) {
-                    const f = await getFixture(market.fixtureId);
-                    setFixture(f);
-                    if (f) {
-                        setHomeTeam(getTeam(f.homeTeamId));
-                        setAwayTeam(getTeam(f.awayTeamId));
-                    }
-                }
-            }
-            fetchFixture();
-        }, [pos.marketId]);
+    const isLoading = isUserLoading || isLoadingWallet || isLoadingPositions || isLoadingTrades;
 
-        const isYes = pos.yesShares > 0;
-        const pnlClass = pos.unrealizedPnl > 0 ? "text-green-600" : "text-red-600";
-
-        if (!homeTeam || !awayTeam) return null;
-
+     if (isLoading) {
         return (
-            <TableRow>
-                <TableCell>
-                    <Link href={`/markets/${pos.marketId}`} className="font-medium hover:underline">
-                        {homeTeam?.shortName} vs {awayTeam?.shortName}
-                    </Link>
-                </TableCell>
-                <TableCell><Badge className={isYes ? 'bg-blue-100 text-blue-800' : 'bg-pink-100 text-pink-800'}>{isYes ? 'YES' : 'NO'}</Badge></TableCell>
-                <TableCell>{isYes ? pos.yesShares : pos.noShares}</TableCell>
-                <TableCell>{formatCurrency(isYes ? pos.avgPriceYes : pos.avgPriceNo, '')}</TableCell>
-                <TableCell>{formatCurrency(0.65, '')}</TableCell>
-                <TableCell className={`text-right font-medium ${pnlClass}`}>
-                    {pos.unrealizedPnl > 0 ? '+' : ''}{formatCurrency(pos.unrealizedPnl)}
-                </TableCell>
-            </TableRow>
+            <div className="flex h-[80vh] w-full items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+        );
+    }
+
+    if (!user) {
+         return (
+            <div className="container mx-auto py-8 text-center">
+                <p className="text-muted-foreground">Please <Link href="/login" className="underline font-semibold text-primary">log in</Link> to view your portfolio.</p>
+            </div>
         )
     }
 
-    const TradeRow = ({ trade }: { trade: Trade }) => {
-        const [fixture, setFixture] = useState<Fixture | undefined>(undefined);
-        const [homeTeam, setHomeTeam] = useState<Team | null>(null);
-        const [awayTeam, setAwayTeam] = useState<Team | null>(null);
-        
-        useEffect(() => {
-            const fetchFixture = async () => {
-                const market = await getMarket(trade.marketId);
-                if (market) {
-                    const f = await getFixture(market.fixtureId);
-                    setFixture(f);
-                    if (f) {
-                        setHomeTeam(getTeam(f.homeTeamId));
-                        setAwayTeam(getTeam(f.awayTeamId));
-                    }
-                }
-            }
-            fetchFixture();
-        }, [trade.marketId]);
-
-        if (!homeTeam || !awayTeam) return null;
-        
-        return (
-            <TableRow>
-                <TableCell className="text-muted-foreground">{formatDistanceToNow(fromUnixTime(trade.createdAt/1000), { addSuffix: true})}</TableCell>
-                <TableCell>
-                    <Link href={`/markets/${trade.marketId}`} className="font-medium hover:underline">
-                        {homeTeam?.shortName} vs {awayTeam?.shortName}
-                    </Link>
-                </TableCell>
-                <TableCell><Badge className={trade.side === 'YES' ? 'bg-blue-100 text-blue-800' : 'bg-pink-100 text-pink-800'}>{trade.side}</Badge></TableCell>
-                <TableCell>{formatCurrency(trade.amount)}</TableCell>
-                <TableCell>{trade.shares.toFixed(2)}</TableCell>
-                <TableCell className="text-right">{formatCurrency(trade.avgPrice, '')}</TableCell>
-            </TableRow>
-        )
-    }
+    const unrealizedPnl = positions?.reduce((acc, pos) => acc + pos.unrealizedPnl, 0) ?? 0;
+    const pnlClass = unrealizedPnl >= 0 ? "text-green-600" : "text-red-600";
+    const availableBalance = wallet ? wallet.balanceDemo - wallet.lockedDemo : 0;
 
     return (
         <div className="container mx-auto py-8">
@@ -139,7 +203,7 @@ export default function PortfolioPage() {
                             </div>
                             <div>
                                 <div className="text-sm text-muted-foreground">Total Balance</div>
-                                <div className="text-2xl font-bold">{formatCurrency(11350.50)}</div>
+                                <div className="text-2xl font-bold">{formatCurrency(wallet?.balanceDemo ?? 0)}</div>
                             </div>
                         </div>
                          <div className="flex items-center gap-4 rounded-lg border p-4">
@@ -148,7 +212,7 @@ export default function PortfolioPage() {
                             </div>
                             <div>
                                 <div className="text-sm text-muted-foreground">Available</div>
-                                <div className="text-2xl font-bold">{formatCurrency(9850.50)}</div>
+                                <div className="text-2xl font-bold">{formatCurrency(availableBalance)}</div>
                             </div>
                         </div>
                          <div className="flex items-center gap-4 rounded-lg border p-4">
@@ -157,7 +221,9 @@ export default function PortfolioPage() {
                             </div>
                             <div>
                                 <div className="text-sm text-muted-foreground">Unrealized P&L</div>
-                                <div className="text-2xl font-bold text-green-600">+{formatCurrency(340.25)}</div>
+                                <div className={`text-2xl font-bold ${pnlClass}`}>
+                                    {unrealizedPnl >= 0 ? '+' : ''}{formatCurrency(unrealizedPnl)}
+                                </div>
                             </div>
                         </div>
                     </CardContent>
@@ -183,11 +249,11 @@ export default function PortfolioPage() {
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {positions.length > 0 ? (
-                                            positions.filter(p => p.unrealizedPnl !== 0).map(pos => <PositionRow key={pos.marketId} pos={pos} />)
+                                        {positions && positions.length > 0 ? (
+                                            positions.filter(p => p.yesShares > 0 || p.noShares > 0).map(pos => <PositionRow key={pos.id} pos={pos} />)
                                         ) : (
                                             <TableRow>
-                                                <TableCell colSpan={6} className="text-center text-muted-foreground">No open positions.</TableCell>
+                                                <TableCell colSpan={6} className="text-center text-muted-foreground py-8">No open positions.</TableCell>
                                             </TableRow>
                                         )}
                                     </TableBody>
@@ -210,11 +276,11 @@ export default function PortfolioPage() {
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {trades.length > 0 ? (
-                                            trades.map(trade => <TradeRow key={trade.tradeId} trade={trade} />)
+                                        {trades && trades.length > 0 ? (
+                                            trades.map(trade => <TradeRow key={trade.id} trade={trade} />)
                                         ) : (
                                             <TableRow>
-                                                <TableCell colSpan={6} className="text-center text-muted-foreground">No trade history.</TableCell>
+                                                <TableCell colSpan={6} className="text-center text-muted-foreground py-8">No trade history.</TableCell>
                                             </TableRow>
                                         )}
                                     </TableBody>
@@ -227,3 +293,5 @@ export default function PortfolioPage() {
         </div>
     );
 }
+
+    

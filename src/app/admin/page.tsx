@@ -43,7 +43,7 @@ const FixtureRow = ({ fixture, teams }: { fixture: Fixture, teams: Team[] | null
             <TableCell><Badge variant="outline">{fixture.status}</Badge></TableCell>
         </TableRow>
     )
-}
+};
 
 const MarketRow = ({ market, fixtures, teams }: { market: Market, fixtures: Fixture[] | null, teams: Team[] | null }) => {
     const fixture = useMemo(() => fixtures?.find(f => f.id === market.fixtureId), [fixtures, market.fixtureId]);
@@ -86,7 +86,7 @@ const MarketRow = ({ market, fixtures, teams }: { market: Market, fixtures: Fixt
             </TableCell>
         </TableRow>
     )
-}
+};
 
 export default function AdminPage() {
     const firestore = useFirestore();
@@ -327,7 +327,7 @@ export default function AdminPage() {
                             <CardHeader>
                                 <CardTitle>Fixtures</CardTitle>
                                 <CardDescription>Fixtures stored in the database.</CardDescription>
-                            </CardHeader>
+                            </Header>
                             <CardContent>
                                <Table>
                                     <TableHeader>
@@ -358,5 +358,3 @@ export default function AdminPage() {
         </div>
     );
 }
-
-    

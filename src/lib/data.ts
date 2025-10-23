@@ -40,7 +40,7 @@ export const getTeams = (): Team[] => {
     }));
 };
 
-export const getTeam = (id: string): Team | undefined => {
+export const getTeam = async (id: string): Promise<Team | undefined> => {
     let teamInfo = Object.values(teamNameMap).find(t => t.name.toLowerCase() === id.toLowerCase() || t.id.toLowerCase() === id.toLowerCase());
 
     if (!teamInfo) {
@@ -143,6 +143,4 @@ export const getPool = async (marketId: string): Promise<Pool | undefined> => {
     };
 };
 
-
-export const getUserPositions = (userId: string): Position[] => [];
-export const getUserTrades = (userId: string): Trade[] => [];
+    

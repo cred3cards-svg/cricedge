@@ -1,3 +1,4 @@
+
 export type User = {
   id: string;
   email: string;
@@ -8,7 +9,7 @@ export type User = {
 };
 
 export type Wallet = {
-  uid: string;
+  id: string;
   balanceDemo: number;
   lockedDemo: number;
   updatedAt: number; // timestamp
@@ -79,6 +80,7 @@ export type Trade = {
 };
 
 export type Position = {
+  id: string;
   uid: string;
   marketId: string;
   yesShares: number;
@@ -108,3 +110,5 @@ export type AuditLog = {
   payload: object;
   createdAt: number; // timestamp
 };
+
+    
