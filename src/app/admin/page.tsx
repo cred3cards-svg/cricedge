@@ -88,6 +88,7 @@ const MarketRow = ({ market, fixtures, teams }: { market: Market, fixtures: Fixt
     )
 };
 
+
 export default function AdminPage() {
     const firestore = useFirestore();
     const router = useRouter();
@@ -127,7 +128,7 @@ export default function AdminPage() {
 
             if (!firestore) return;
 
-            // Fetch collection group data
+            // Fetch collection group data only after isAdmin is confirmed
             setIsLoadingTrades(true);
             try {
                 const trades: Trade[] = [];
