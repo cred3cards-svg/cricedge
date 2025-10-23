@@ -14,12 +14,9 @@ export const listUsers = onCall({ region: 'us-central1' }, async (req) => {
     }
 
     const uid = req.auth.uid;
-    const doc = await admin.firestore().doc(`roles_admin/${uid}`).get();
-    if (!doc.exists) {
-      // Use a hardcoded UID for the demo if the roles_admin doc doesn't exist
-      if (uid !== 'Zx04QiJxoNW5KuiAinGuEZA9Zb62') {
-         throw new HttpsError('permission-denied', 'Admins only');
-      }
+    const adminDoc = await admin.firestore().doc(`roles_admin/${uid}`).get();
+    if (!adminDoc.exists) {
+       throw new HttpsError('permission-denied', 'Admins only');
     }
 
     const snap = await admin.firestore().collection('users').limit(200).get();

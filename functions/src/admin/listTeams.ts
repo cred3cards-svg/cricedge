@@ -5,15 +5,14 @@ if (!admin.apps.length) admin.initializeApp();
 
 export const adminListTeams = onCall({ region: 'us-central1' }, async (req) => {
   try {
-    if (!req.auth) throw new HttpsError('unauthenticated', 'Sign in required');
+    if (!req.auth) {
+      throw new HttpsError('unauthenticated', 'Sign in required');
+    }
 
     const uid = req.auth.uid;
-    const isAdmin = await admin.firestore().doc(`roles_admin/${uid}`).get();
-    if (!isAdmin.exists) {
-        // Use a hardcoded UID for the demo if the roles_admin doc doesn't exist
-        if (uid !== 'Zx04QiJxoNW5KuiAinGuEZA9Zb62') {
-            throw new HttpsError('permission-denied', 'Admins only');
-        }
+    const adminDoc = await admin.firestore().doc(`roles_admin/${uid}`).get();
+    if (!adminDoc.exists) {
+        throw new HttpsError('permission-denied', 'Admins only');
     }
 
     const snap = await admin.firestore().collection('teams').limit(500).get();

@@ -16,10 +16,7 @@ export const adminListTrades = onCall({ region: 'us-central1' }, async (req) => 
     const uid = req.auth.uid;
     const adminDoc = await admin.firestore().doc(`roles_admin/${uid}`).get();
     if (!adminDoc.exists) {
-        // Use a hardcoded UID for the demo if the roles_admin doc doesn't exist
-        if (uid !== 'Zx04QiJxoNW5KuiAinGuEZA9Zb62') {
-            throw new HttpsError('permission-denied', 'Admins only');
-        }
+        throw new HttpsError('permission-denied', 'Admins only');
     }
 
     const snapshot = await admin.firestore()
