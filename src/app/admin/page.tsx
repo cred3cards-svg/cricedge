@@ -98,17 +98,48 @@ export default function AdminPage() {
     const [allTrades, setAllTrades] = useState<Trade[]>([]);
     const [isLoadingTrades, setIsLoadingTrades] = useState(true);
 
-    // This effect MUST run first to determine if we are an admin.
+    // This effect handles both authentication and data fetching sequentially.
     useEffect(() => {
         const adminSession = sessionStorage.getItem('admin-authenticated');
-        if (adminSession === 'true') {
-            setIsAdmin(true);
-        } else {
+        if (adminSession !== 'true') {
             router.push('/admin/login');
+            return; // Stop execution if not an admin
         }
-        // This loading state is for the entire page, including auth check.
+
+        // If we reach here, the user is an admin.
+        setIsAdmin(true);
+        // We can stop the main page loader now, as queries below have their own loaders.
         setIsLoading(false);
-    }, [router]);
+
+        // Define and call the function to fetch trades now that we're authenticated.
+        const fetchAllTrades = async () => {
+            if (!firestore) return; // Ensure firestore is available
+
+            setIsLoadingTrades(true);
+            try {
+                const trades: Trade[] = [];
+                const tradesQuery = query(collectionGroup(firestore, 'trades'));
+                const querySnapshot = await getDocs(tradesQuery);
+                querySnapshot.forEach((doc) => {
+                    trades.push({ ...doc.data(), id: doc.id } as Trade);
+                });
+                trades.sort((a, b) => (new Date(b.createdAt).getTime()) - (new Date(a.createdAt).getTime()));
+                setAllTrades(trades);
+            } catch (error) {
+                // Create a contextual error for the collection group query
+                const contextualError = new FirestorePermissionError({
+                    operation: 'list',
+                    path: 'trades', // path for a collection group query
+                });
+                // Emit the error using the global emitter
+                errorEmitter.emit('permission-error', contextualError);
+            } finally {
+                setIsLoadingTrades(false);
+            }
+        };
+
+        fetchAllTrades();
+    }, [router, firestore]); // Depend on router and firestore
 
     // Firestore queries are now conditional on `isAdmin` being true.
     // They will not run until the admin check passes.
@@ -135,37 +166,6 @@ export default function AdminPage() {
         return collection(firestore, 'teams');
     }, [firestore, isAdmin]);
     const { data: teams, isLoading: isLoadingTeams } = useCollection<Team>(teamsQuery);
-
-    // This effect for fetching trades also depends on `isAdmin`.
-    useEffect(() => {
-        if (!firestore || !isAdmin) return;
-
-        const fetchAllTrades = async () => {
-            setIsLoadingTrades(true);
-            try {
-                const trades: Trade[] = [];
-                const tradesQuery = query(collectionGroup(firestore, 'trades'));
-                const querySnapshot = await getDocs(tradesQuery);
-                querySnapshot.forEach((doc) => {
-                    trades.push({ ...doc.data(), id: doc.id } as Trade);
-                });
-                trades.sort((a, b) => (new Date(b.createdAt).getTime()) - (new Date(a.createdAt).getTime()));
-                setAllTrades(trades);
-            } catch (error) {
-                // Create a contextual error for the collection group query
-                const contextualError = new FirestorePermissionError({
-                    operation: 'list',
-                    path: 'trades', // path for a collection group query
-                });
-                // Emit the error using the global emitter
-                errorEmitter.emit('permission-error', contextualError);
-            } finally {
-                setIsLoadingTrades(false);
-            }
-        };
-
-        fetchAllTrades();
-    }, [firestore, isAdmin]);
 
     // Show a global loading spinner while we check for the admin session.
     if (isLoading) {
