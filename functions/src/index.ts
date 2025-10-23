@@ -10,3 +10,4 @@ export * from './admin/listMarkets';
 export * from './admin/listFixtures';
 export * from './admin/listTrades';
 export * from './admin/listTeams';
+export * from './admin/ping';
