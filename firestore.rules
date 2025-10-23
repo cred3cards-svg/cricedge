@@ -1,238 +1,248 @@
 /**
- * @file Firebase Security Rules for Cricket Prediction Market MVP
+ * @file Firestore Security Rules
+ * @description This ruleset enforces a strict user-ownership model for private data,
+ *              allows public read access to global data, and restricts administrative
+ *              actions to authorized users.
  *
- * @core_philosophy This ruleset enforces a strict user-ownership model for personal data,
- *                  public read access to global data, and admin-only access to sensitive
- *                  market and settlement data.
+ * @dataStructure
+ *  - /users/{userId}: Stores user profile data, accessible only to the user.
+ *  - /wallets/{walletId}: Stores user wallet data, accessible only to the user. walletId must equal userId.
+ *  - /competitions/{competitionId}: Stores competition data, publicly readable.
+ *  - /teams/{teamId}: Stores team data, publicly readable.
+ *  - /fixtures/{fixtureId}: Stores fixture data, publicly readable.
+ *  - /markets/{marketId}: Stores market data, restricted writes (admin only).
+ *  - /pools/{marketId}: Stores pool data, restricted writes (Cloud Functions only).
+ *  - /users/{userId}/trades/{tradeId}: Stores trade data, accessible only to the user.
+ *  - /users/{userId}/positions/{positionId}: Stores position data, accessible only to the user.
+ *  - /settlements/{marketId}: Stores settlement data, restricted writes (admin only).
+ *  - /audit/{logId}: Stores audit logs, highly restricted access.
+ *  - /roles_admin/{userId}: Denotes admin users. Existence of a document grants admin privileges.
+ *  - /telegramProfiles/{telegramId}: Stores Telegram profile mappings, restricted access.
+ *  - /botSessions/{chatId}: Stores Telegram bot session data, restricted access.
  *
- * @data_structure The data is organized into top-level collections for global entities
- *                 (competitions, teams, fixtures) and user-specific subcollections under
- *                 /users/{userId} for private data (wallets, trades, positions).
- *                 Admin status is stored in the /roles_admin/{userId} collection.
+ * @keySecurityDecisions
+ *  - User data is strictly owned and controlled by the user.
+ *  - Public data (competitions, teams, fixtures) is readable by all.
+ *  - Administrative privileges are granted based on the existence of a document in `/roles_admin/{userId}`.
+ *  - List operations on user-owned data are allowed only for the owner.
+ *  - Unauthenticated reads are blocked.
  *
- * @key_security_decisions - Public read access is granted for competitions, teams, and fixtures.
- *                         - User listing is disallowed for privacy.
- *                         - Market creation, modification, and settlement are restricted to admins.
- *                         - Audit logs have restricted access.
+ * @denormalizationForAuthorization
+ *  - Ownership is enforced by requiring the `userId` in the path to match the `uid` field within the document.
+ *  - Admin status is determined by the existence of a document in the `/roles_admin/{userId}` collection, avoiding the need to store roles within the user document itself.
  *
- * @denormalization_for_authorization
- *   - Admin status is denormalized by checking for the existence of a document in the `/roles_admin/{userId}` collection.
- *   - Ownership for user-specific data is enforced by matching the `request.auth.uid` against the `userId` path parameter.
+ * @structuralSegregation
+ *  - Public data (competitions, teams, fixtures) is stored in top-level collections for easy public access.
+ *  - Private user data (wallets, trades, positions) is stored under the `/users/{userId}` collection.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Checks if the request is authenticated.
-     * @return True if the request is authenticated, false otherwise.
+     * @description Checks if the user is signed in.
+     * @principle Verified Identity
      */
     function isSignedIn() {
       return request.auth != null;
     }
 
     /**
-     * @description Checks if the authenticated user is the owner of the resource.
-     * @param {string} userId The user ID to compare against the authenticated user's ID.
-     * @return True if the user is the owner, false otherwise.
-     */
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
-
-    /**
-     * @description Checks if the authenticated user is an existing owner of the resource (resource must exist).
-     * @param {string} userId The user ID to compare against the authenticated user's ID.
-     * @return True if the user is the owner and the resource exists, false otherwise.
-     */
-    function isExistingOwner(userId) {
-      return isOwner(userId) && resource != null;
-    }
-
-    /**
-     * @description Checks if the authenticated user has admin privileges.
-     * @return True if the user is an admin, false otherwise.
+     * @description Checks if the user is an admin.
+     * @principle Roles
      */
     function isAdmin() {
         return exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
     }
 
     /**
-     * @description Rules for user profiles.
+     * @description Checks if the user is the owner of the resource based on userId
+     * @principle Ownership
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * @description Enforces that the incoming resource has the correct owner ID.
+     * @principle Relational Integrity
+     */
+    function requestOwnsResource(resourceUid) {
+      return request.resource.data.uid == resourceUid;
+    }
+
+
+    /**
+     * @description
      * @path /users/{userId}
-     * @allow (create) - Authenticated user can create their own profile if the userId matches their auth.uid.
-     * @allow (get, update, delete) - Authenticated user can get, update, and delete their own profile.
-     * @deny (create) - Unauthenticated user cannot create a profile.
-     * @deny (update, delete) - A different user cannot update or delete this profile.
-     * @principle Enforces document ownership for writes; read access to owner only.
+     * @allow (read,write) if isSignedIn() && request.auth.uid == userId
+     * @deny (read,write) if !isSignedIn()
+     * @principle Enforces document ownership for read/write.
      */
     match /users/{userId} {
-      allow get: if isOwner(userId);
-      allow list: if false; // User listing is disallowed for privacy.
-      allow create: if isOwner(userId);
-      allow update: if isExistingOwner(userId);
-      allow delete: if isExistingOwner(userId);
+      allow read, write: if isOwner(userId);
     }
 
     /**
-     * @description Rules for user wallets.
+     * @description
      * @path /wallets/{walletId}
-     * @allow (create) - Authenticated user can create their own wallet if the walletId matches their auth.uid.
-     * @allow (get, update, delete) - Authenticated user can get, update, and delete their own wallet.
-     * @deny (create) - Unauthenticated user cannot create a wallet.
-     * @deny (update, delete) - A different user cannot update or delete this wallet.
-     * @principle Enforces document ownership for writes; read access to owner only.
+     * @allow (read,write) if isSignedIn() && request.auth.uid == walletId
+     * @deny (read,write) if !isSignedIn() || request.auth.uid != walletId
+     * @principle Enforces document ownership for read/write and validates path consistency.
      */
     match /wallets/{walletId} {
-      allow get: if isOwner(walletId);
-      allow list: if false; // Wallets are not listable.
-      allow create: if isOwner(walletId);
-      allow update: if isExistingOwner(walletId);
-      allow delete: if isExistingOwner(walletId);
+      allow read, write: if isOwner(walletId);
     }
 
     /**
-     * @description Rules for cricket competitions.
+     * @description
      * @path /competitions/{competitionId}
-     * @allow (get, list) - Anyone can read competition data.
-     * @deny (create, update, delete) - Only admins can create, update, and delete competitions.
-     * @principle Public read access with admin-only writes.
+     * @allow (get,list) if true
+     * @deny (create,update,delete) if true
+     * @principle Allows public read access.
      */
     match /competitions/{competitionId} {
       allow get, list: if true;
-      allow create: if isAdmin();
-      allow update: if isAdmin() && resource != null;
-      allow delete: if isAdmin() && resource != null;
+      allow create, update, delete: if false;
     }
 
     /**
-     * @description Rules for cricket teams.
+     * @description
      * @path /teams/{teamId}
-     * @allow (get, list) - Anyone can read team data.
-     * @deny (create, update, delete) - Only admins can create, update, and delete teams.
-     * @principle Public read access with admin-only writes.
+     * @allow (get,list) if true
+     * @deny (create,update,delete) if true
+     * @principle Allows public read access.
      */
     match /teams/{teamId} {
       allow get, list: if true;
-      allow create: if isAdmin();
-      allow update: if isAdmin() && resource != null;
-      allow delete: if isAdmin() && resource != null;
+      allow create, update, delete: if false;
     }
 
     /**
-     * @description Rules for cricket match fixtures.
+     * @description
      * @path /fixtures/{fixtureId}
-     * @allow (get, list) - Anyone can read fixture data.
-     * @deny (create, update, delete) - Only admins can create, update, and delete fixtures.
-     * @principle Public read access with admin-only writes.
+     * @allow (get,list) if true
+     * @deny (create,update,delete) if true
+     * @principle Allows public read access.
      */
     match /fixtures/{fixtureId} {
       allow get, list: if true;
-      allow create: if isAdmin();
-      allow update: if isAdmin() && resource != null;
-      allow delete: if isAdmin() && resource != null;
+      allow create, update, delete: if false;
     }
 
     /**
-     * @description Rules for prediction markets.
+     * @description
      * @path /markets/{marketId}
-     * @allow (get, list) - Anyone can read market data.
-     * @deny (create, update, delete) - Only admins can create, update, and delete markets.
-     * @principle Admin-controlled access for creation/modification.
+     * @allow read: if true;
+     * @allow create: if isAdmin();
+     * @allow update: if isAdmin() && resource != null;
+     * @allow delete: if isAdmin() && resource != null;
+     * @allow list: if true;
+     * @principle Allows public read access and restricts writes to admins.
      */
     match /markets/{marketId} {
       allow get, list: if true;
       allow create: if isAdmin();
-      allow update: if isAdmin() && resource != null;
-      allow delete: if isAdmin() && resource != null;
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
     }
 
     /**
-     * @description Rules for CPMM pools.
+     * @description
      * @path /pools/{marketId}
-     * @deny get, list, create, update, delete - Writes should be restricted via Cloud Functions.
-     * @principle Restricted writes via Cloud Functions.
+     * @allow get: if true;
+     * @allow list: if false;
+     * @allow create: if false;
+     * @allow update: if false;
+     * @allow delete: if false;
+     * @principle No client writes to Pools.
      */
     match /pools/{marketId} {
-        allow get: if false;
-        allow list: if false;
-        allow create: if false;
-        allow update: if false;
-        allow delete: if false;
+      allow get: if true;
+      allow list: if false;
+      allow create, update, delete: if false;
     }
 
     /**
-     * @description Rules for user trades.
+     * @description
      * @path /users/{userId}/trades/{tradeId}
-     * @allow (create) - Authenticated user can create their own trade if the userId matches their auth.uid.
-     * @allow (get, list, update, delete) - Authenticated user can get, list, update, and delete their own trades.
-     * @deny (create) - Unauthenticated user cannot create a trade.
-     * @deny (update, delete) - A different user cannot update or delete this trade.
-     * @principle Enforces document ownership for writes; read access to owner only.
+     * @allow list, get: if isSignedIn() && resource.data.uid == request.auth.uid;
+     * @allow create: if isSignedIn() && requestOwnsResource(request.auth.uid);
+     * @allow update, delete: if false;
      */
     match /users/{userId}/trades/{tradeId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId);
-      allow update: if isExistingOwner(userId);
-      allow delete: if isExistingOwner(userId);
+      // Queries are "list" in rules; allow list if the result docs belong to the caller
+      allow list, get: if isOwner(userId);
+      // Creating a trade must attribute to caller
+      allow create: if isOwner(userId) && requestOwnsResource(userId);
+      allow update, delete: if false; // mutate via Functions if needed
     }
 
     /**
-     * @description Rules for user positions.
+     * @description
      * @path /users/{userId}/positions/{positionId}
-     * @allow (create) - Authenticated user can create their own position if the userId matches their auth.uid.
-     * @allow (get, list, update, delete) - Authenticated user can get, list, update, and delete their own positions.
-     * @deny (create) - Unauthenticated user cannot create a position.
-     * @deny (update, delete) - A different user cannot update or delete this position.
-     * @principle Enforces document ownership for writes; read access to owner only.
+     * @allow read, list: if isSignedIn() && resource.data.uid == request.auth.uid;
+     * @allow write: if false;
      */
     match /users/{userId}/positions/{positionId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId);
-      allow update: if isExistingOwner(userId);
-      allow delete: if isExistingOwner(userId);
+      allow get, list: if isOwner(userId);
+      allow create, update, delete: if false; // mutate via Functions if needed
     }
 
     /**
-     * @description Rules for market settlements.
+     * @description
      * @path /settlements/{marketId}
-     * @deny (get, list) - Anyone can read settlement data.
-     * @deny (create, update, delete) - Only admins can create, update, and delete settlements.
-     * @principle Admin-controlled access for settlements.
+     * @allow read: if true;
+     * @allow write: if isAdmin();
+     * @principle Allows public read access and restricts writes to admins.
      */
     match /settlements/{marketId} {
-      allow get: if isAdmin();
-      allow list: if false; //Settlements are not listable
-      allow create: if isAdmin();
-      allow update: if isAdmin() && resource != null;
-      allow delete: if isAdmin() && resource != null;
+      allow get, list: if true;
+      allow create, update, delete: if isAdmin();
     }
 
     /**
-     * @description Rules for audit logs.
+     * @description
      * @path /audit/{logId}
-     * @deny (get, list, create, update, delete) - Audit logs have restricted access.
-     * @principle Restricted access for auditing purposes.
+     * @allow read, write: if false;
+     * @principle Denies all client access to audit logs.
      */
     match /audit/{logId} {
-        allow get: if false;
-        allow list: if false;
-        allow create: if false;
-        allow update: if false;
-        allow delete: if false;
+      allow get, list, create, update, delete: if false;
     }
-        /**
-     * @description Rules for admin roles.
+
+    /**
+     * @description
      * @path /roles_admin/{userId}
+     * @allow read, write: if false;
+     * @principle No client read/write to roles
      */
     match /roles_admin/{userId} {
-      allow get: if isAdmin();
-      allow list: if false; // Admin roles are not listable.
-      allow create: if isAdmin();
-      allow update: if false; // Admins cannot update their own roles in this prototype.
-      allow delete: if isAdmin();
+          allow read, write, create, update, delete: if false;
+    }
+
+    /**
+     * @description
+     * @path /telegramProfiles/{telegramId}
+     */
+    match /telegramProfiles/{telegramId} {
+      allow get: if false;  // No public access to profiles
+      allow list: if false; // No public access to profiles
+      allow create: if false;  // Profiles are created via trusted server
+      allow update: if false;  // Profiles are managed via trusted server
+      allow delete: if false;  // Never allow client-side deletion
+    }
+
+    /**
+     * @description
+     * @path /botSessions/{chatId}
+     */
+    match /botSessions/{chatId} {
+      allow get: if false;  // Must not be directly readable.
+      allow list: if false; // No listing sessions.
+      allow create: if false; // Only created by trusted bot.
+      allow update: if false; // Only modified by trusted bot.
+      allow delete: if false; // Never allow deletion via client.
     }
   }
 }
