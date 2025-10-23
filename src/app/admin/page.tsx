@@ -98,22 +98,17 @@ export default function AdminPage() {
     const [allTrades, setAllTrades] = useState<Trade[]>([]);
     const [isLoadingTrades, setIsLoadingTrades] = useState(true);
 
-    // This effect handles both authentication and data fetching sequentially.
     useEffect(() => {
         const adminSession = sessionStorage.getItem('admin-authenticated');
         if (adminSession !== 'true') {
             router.push('/admin/login');
-            return; // Stop execution if not an admin
+            return;
         }
-
-        // If we reach here, the user is an admin.
         setIsAdmin(true);
-        // We can stop the main page loader now, as queries below have their own loaders.
         setIsLoading(false);
 
-        // Define and call the function to fetch trades now that we're authenticated.
         const fetchAllTrades = async () => {
-            if (!firestore) return; // Ensure firestore is available
+            if (!firestore) return;
 
             setIsLoadingTrades(true);
             try {
@@ -123,7 +118,7 @@ export default function AdminPage() {
                 querySnapshot.forEach((doc) => {
                     trades.push({ ...doc.data(), id: doc.id } as Trade);
                 });
-                trades.sort((a, b) => (new Date(b.createdAt).getTime()) - (new Date(a.createdAt).getTime()));
+                trades.sort((a, b) => (b.createdAt) - (a.createdAt));
                 setAllTrades(trades);
             } catch (error) {
                 // Create a contextual error for the collection group query
@@ -139,10 +134,8 @@ export default function AdminPage() {
         };
 
         fetchAllTrades();
-    }, [router, firestore]); // Depend on router and firestore
+    }, [router, firestore]);
 
-    // Firestore queries are now conditional on `isAdmin` being true.
-    // They will not run until the admin check passes.
     const usersQuery = useMemoFirebase(() => {
         if (!firestore || !isAdmin) return null;
         return collection(firestore, 'users');
@@ -167,7 +160,6 @@ export default function AdminPage() {
     }, [firestore, isAdmin]);
     const { data: teams, isLoading: isLoadingTeams } = useCollection<Team>(teamsQuery);
 
-    // Show a global loading spinner while we check for the admin session.
     if (isLoading) {
         return (
             <div className="flex h-screen w-full items-center justify-center">
@@ -176,11 +168,9 @@ export default function AdminPage() {
         );
     }
     
-    // If not an admin, the router should have already redirected. This is a safeguard.
     if (!isAdmin) {
       return null;
     }
-
 
     return (
         <div className="container mx-auto py-8">
@@ -327,7 +317,7 @@ export default function AdminPage() {
                             <CardHeader>
                                 <CardTitle>Fixtures</CardTitle>
                                 <CardDescription>Fixtures stored in the database.</CardDescription>
-                            </Header>
+                            </CardHeader>
                             <CardContent>
                                <Table>
                                     <TableHeader>
@@ -358,3 +348,5 @@ export default function AdminPage() {
         </div>
     );
 }
+
+    
