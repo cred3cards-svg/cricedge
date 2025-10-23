@@ -17,6 +17,8 @@ import type { User, Trade, Market, Fixture, Team } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatCurrency } from '@/lib/utils';
 import Link from 'next/link';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 const FixtureRow = ({ fixture, teams }: { fixture: Fixture, teams: Team[] | null }) => {
     const homeTeam = useMemo(() => teams?.find(t => t.id === fixture.homeTeamId), [teams, fixture.homeTeamId]);
@@ -136,28 +138,43 @@ export default function AdminPage() {
 
         const fetchAllTrades = async () => {
             setIsLoadingTrades(true);
-            const trades: Trade[] = [];
-            const tradesQuery = query(collectionGroup(firestore, 'trades'));
-            const querySnapshot = await getDocs(tradesQuery);
-            querySnapshot.forEach((doc) => {
-                trades.push({ ...doc.data(), id: doc.id } as Trade);
-            });
-            trades.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-            setAllTrades(trades);
-            setIsLoadingTrades(false);
+            try {
+                const trades: Trade[] = [];
+                const tradesQuery = query(collectionGroup(firestore, 'trades'));
+                const querySnapshot = await getDocs(tradesQuery);
+                querySnapshot.forEach((doc) => {
+                    trades.push({ ...doc.data(), id: doc.id } as Trade);
+                });
+                trades.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+                setAllTrades(trades);
+                setIsLoadingTrades(false);
+            } catch (error) {
+                const contextualError = new FirestorePermissionError({
+                    operation: 'list',
+                    path: 'trades', // path for a collection group query
+                });
+                errorEmitter.emit('permission-error', contextualError);
+                setIsLoadingTrades(false);
+            }
         };
 
         fetchAllTrades();
     }, [firestore, isAdmin]);
 
 
-    if (isLoading || !isAdmin) {
+    if (isLoading) {
         return (
             <div className="flex h-screen w-full items-center justify-center">
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
         );
     }
+    
+    // Only render the content if the user is an admin
+    if (!isAdmin) {
+      return null;
+    }
+
 
     return (
         <div className="container mx-auto py-8">
@@ -335,5 +352,3 @@ export default function AdminPage() {
         </div>
     );
 }
-
-    
