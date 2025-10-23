@@ -98,43 +98,36 @@ export default function AdminPage() {
     const [allTrades, setAllTrades] = useState<Trade[]>([]);
     const [isLoadingTrades, setIsLoadingTrades] = useState(true);
 
-    const usersQuery = useMemoFirebase(() => {
-        if (!firestore || !isAdmin) return null;
-        return collection(firestore, 'users');
-    }, [firestore, isAdmin]);
+    // Gate queries on isAdmin state
+    const usersQuery = useMemoFirebase(() => (firestore && isAdmin ? collection(firestore, 'users') : null), [firestore, isAdmin]);
     const { data: users, isLoading: isLoadingUsers } = useCollection<User>(usersQuery);
 
-    const marketsQuery = useMemoFirebase(() => {
-        if (!firestore || !isAdmin) return null;
-        return collection(firestore, 'markets');
-    }, [firestore, isAdmin]);
+    const marketsQuery = useMemoFirebase(() => (firestore && isAdmin ? collection(firestore, 'markets') : null), [firestore, isAdmin]);
     const { data: markets, isLoading: isLoadingMarkets } = useCollection<Market>(marketsQuery);
     
-    const fixturesQuery = useMemoFirebase(() => {
-        if (!firestore || !isAdmin) return null;
-        return collection(firestore, 'fixtures');
-    }, [firestore, isAdmin]);
+    const fixturesQuery = useMemoFirebase(() => (firestore && isAdmin ? collection(firestore, 'fixtures') : null), [firestore, isAdmin]);
     const { data: fixtures, isLoading: isLoadingFixtures } = useCollection<Fixture>(fixturesQuery);
 
-    const teamsQuery = useMemoFirebase(() => {
-        if (!firestore || !isAdmin) return null;
-        return collection(firestore, 'teams');
-    }, [firestore, isAdmin]);
+    const teamsQuery = useMemoFirebase(() => (firestore && isAdmin ? collection(firestore, 'teams') : null), [firestore, isAdmin]);
     const { data: teams, isLoading: isLoadingTeams } = useCollection<Team>(teamsQuery);
 
     useEffect(() => {
+        // This effect runs once on mount to check auth and then fetch data.
         const checkAdminAuth = async () => {
             const adminSession = sessionStorage.getItem('admin-authenticated');
             if (adminSession !== 'true') {
                 router.push('/admin/login');
-                return; 
+                // Don't proceed to fetch data
+                return;
             }
             
+            // If session is valid, set isAdmin to true, which will trigger the queries.
             setIsAdmin(true);
-            setIsLoading(false);
+            setIsLoading(false); // Auth check is done.
 
             if (!firestore) return;
 
+            // Fetch collection group data
             setIsLoadingTrades(true);
             try {
                 const trades: Trade[] = [];
@@ -143,12 +136,13 @@ export default function AdminPage() {
                 querySnapshot.forEach((doc) => {
                     trades.push({ ...doc.data(), id: doc.id } as Trade);
                 });
-                trades.sort((a, b) => (b.createdAt) - (a.createdAt));
+                trades.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
                 setAllTrades(trades);
             } catch (error) {
+                // Create a contextual error for the collection group query
                 const contextualError = new FirestorePermissionError({
                     operation: 'list',
-                    path: 'trades', 
+                    path: 'trades', // path for a collection group query
                 });
                 errorEmitter.emit('permission-error', contextualError);
             } finally {
@@ -167,6 +161,7 @@ export default function AdminPage() {
         );
     }
     
+    // This check is redundant due to the redirect, but good for safety.
     if (!isAdmin) {
       return null; 
     }
