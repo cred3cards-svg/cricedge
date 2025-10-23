@@ -35,7 +35,7 @@ export function listMarkets(payload?: { state?: Market['state'] }): Promise<Admi
 }
 
 export function listFixtures(payload?: { dateFrom?: string; dateTo?: string }): Promise<AdminFixture[]> {
-    return callAdmin('admin-listFixtures', payload);
+    return callAdmin('adminListFixtures', payload);
 }
 
 export function listTrades(): Promise<AdminTrade[]> {
@@ -43,5 +43,6 @@ export function listTrades(): Promise<AdminTrade[]> {
 }
 
 export function listTeams(): Promise<Team[]> {
-    return callAdmin('admin-listTeams');
+    return callAdmin('adminListTeams');
 }
+

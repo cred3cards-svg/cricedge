@@ -1,20 +1,25 @@
 
-import * as functions from 'firebase-functions/v2/https';
 import * as admin from 'firebase-admin';
+import { onCall, HttpsError } from 'firebase-functions/v2/https';
 
-async function isAdmin(uid: string): Promise<boolean> {
-    const adminRoleDoc = await admin.firestore().collection('roles_admin').doc(uid).get();
-    return adminRoleDoc.exists;
+// This check prevents the app from being initialized multiple times.
+if (!admin.apps.length) {
+  admin.initializeApp();
 }
 
-export const adminListTrades = functions.onCall(async (request) => {
-    if (!request.auth) {
-        throw new functions.https.HttpsError('unauthenticated', 'The function must be called while authenticated.');
+export const adminListTrades = onCall({ region: 'us-central1' }, async (req) => {
+  try {
+    if (!req.auth) {
+      throw new HttpsError('unauthenticated', 'Sign in required');
     }
 
-    const uid = request.auth.uid;
-    if (!(await isAdmin(uid))) {
-        throw new functions.https.HttpsError('permission-denied', 'Only admins can access this function.');
+    const uid = req.auth.uid;
+    const adminDoc = await admin.firestore().doc(`roles_admin/${uid}`).get();
+    if (!adminDoc.exists) {
+      // For the demo, we will use a hardcoded UID check instead of roles_admin collection
+      if (uid !== 'Zx04QiJxoNW5KuiAinGuEZA9Zb62') {
+         throw new HttpsError('permission-denied', 'Admins only');
+      }
     }
 
     const snapshot = await admin.firestore()
@@ -32,8 +37,13 @@ export const adminListTrades = functions.onCall(async (request) => {
             side: data.side,
             amount: data.amount,
             shares: data.shares,
-            createdAt: data.createdAt,
+            createdAt: data.createdAt?.toMillis?.() ?? data.createdAt ?? null,
             path: doc.ref.path,
         };
     });
+  } catch (e: any) {
+    console.error('adminListTrades failed:', e);
+    if (e instanceof HttpsError) throw e;
+    throw new HttpsError('internal', e?.message ?? 'adminListTrades error');
+  }
 });

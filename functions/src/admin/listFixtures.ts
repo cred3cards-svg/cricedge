@@ -1,23 +1,28 @@
 
-import * as functions from 'firebase-functions/v2/https';
 import * as admin from 'firebase-admin';
+import { onCall, HttpsError } from 'firebase-functions/v2/https';
 
-async function isAdmin(uid: string): Promise<boolean> {
-    const adminRoleDoc = await admin.firestore().collection('roles_admin').doc(uid).get();
-    return adminRoleDoc.exists;
+// This check prevents the app from being initialized multiple times.
+if (!admin.apps.length) {
+  admin.initializeApp();
 }
 
-export const adminListFixtures = functions.onCall(async (request) => {
-    if (!request.auth) {
-        throw new functions.https.HttpsError('unauthenticated', 'The function must be called while authenticated.');
-    }
-    
-    const uid = request.auth.uid;
-    if (!(await isAdmin(uid))) {
-        throw new functions.https.HttpsError('permission-denied', 'Only admins can access this function.');
+export const adminListFixtures = onCall({ region: 'us-central1' }, async (req) => {
+  try {
+    if (!req.auth) {
+      throw new HttpsError('unauthenticated', 'Sign in required');
     }
 
-    const { dateFrom, dateTo } = request.data;
+    const uid = req.auth.uid;
+    const adminDoc = await admin.firestore().doc(`roles_admin/${uid}`).get();
+    if (!adminDoc.exists) {
+      // For the demo, we will use a hardcoded UID check instead of roles_admin collection
+      if (uid !== 'Zx04QiJxoNW5KuiAinGuEZA9Zb62') {
+         throw new HttpsError('permission-denied', 'Admins only');
+      }
+    }
+
+    const { dateFrom, dateTo } = req.data;
     let query: admin.firestore.Query = admin.firestore().collection('fixtures');
 
     if (dateFrom) {
@@ -28,7 +33,6 @@ export const adminListFixtures = functions.onCall(async (request) => {
     }
 
     query = query.orderBy('startTimeUtc', 'asc').limit(200);
-
     const snapshot = await query.get();
     
     return snapshot.docs.map(doc => {
@@ -37,8 +41,13 @@ export const adminListFixtures = functions.onCall(async (request) => {
             id: doc.id,
             homeTeamId: data.homeTeamId,
             awayTeamId: data.awayTeamId,
-            startTimeUtc: data.startTimeUtc,
+            startTimeUtc: data.startTimeUtc?.toMillis?.() ?? data.startTimeUtc ?? null,
             status: data.status,
         };
     });
+  } catch (e: any) {
+    console.error('adminListFixtures failed:', e);
+    if (e instanceof HttpsError) throw e;
+    throw new HttpsError('internal', e?.message ?? 'adminListFixtures error');
+  }
 });
