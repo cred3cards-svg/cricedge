@@ -12,13 +12,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
 import { MoreHorizontal, Loader2 } from "lucide-react";
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, collectionGroup, getDocs, query } from 'firebase/firestore';
+import { collection } from 'firebase/firestore';
 import type { User, Trade, Market, Fixture, Team } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
-import { formatCurrency } from '@/lib/utils';
-import Link from 'next/link';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
 
 const FixtureRow = ({ fixture, teams }: { fixture: Fixture, teams: Team[] | null }) => {
     const homeTeam = useMemo(() => teams?.find(t => t.id === fixture.homeTeamId), [teams, fixture.homeTeamId]);
@@ -109,7 +105,7 @@ export default function AdminDashboard() {
     const teamsQuery = useMemoFirebase(() => (firestore && isAdmin ? collection(firestore, 'teams') : null), [firestore, isAdmin]);
     const { data: teams, isLoading: isLoadingTeams } = useCollection<Team>(teamsQuery);
     
-    // As per instructions, removing the client-side collectionGroup query for trades.
+    // Per instructions, removing the client-side collectionGroup query for trades.
     // This data should be fetched via a secure callable function.
     const [allTrades, setAllTrades] = useState<Trade[]>([]);
     const [isLoadingTrades, setIsLoadingTrades] = useState(false);
