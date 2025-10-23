@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -92,22 +91,51 @@ export default function AdminPage() {
     const firestore = useFirestore();
     const router = useRouter();
     
-    const [isAdmin, setIsAdmin] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+    const [isAdmin, setIsAdmin] = useState(false);
 
     const [allTrades, setAllTrades] = useState<Trade[]>([]);
     const [isLoadingTrades, setIsLoadingTrades] = useState(true);
 
-    useEffect(() => {
-        const adminSession = sessionStorage.getItem('admin-authenticated');
-        if (adminSession !== 'true') {
-            router.push('/admin/login');
-            return;
-        }
-        setIsAdmin(true);
-        setIsLoading(false);
+    // Queries are now memoized but will only be enabled if isAdmin is true.
+    const usersQuery = useMemoFirebase(() => {
+        if (!firestore || !isAdmin) return null;
+        return collection(firestore, 'users');
+    }, [firestore, isAdmin]);
+    const { data: users, isLoading: isLoadingUsers } = useCollection<User>(usersQuery);
 
-        const fetchAllTrades = async () => {
+    const marketsQuery = useMemoFirebase(() => {
+        if (!firestore || !isAdmin) return null;
+        return collection(firestore, 'markets');
+    }, [firestore, isAdmin]);
+    const { data: markets, isLoading: isLoadingMarkets } = useCollection<Market>(marketsQuery);
+    
+    const fixturesQuery = useMemoFirebase(() => {
+        if (!firestore || !isAdmin) return null;
+        return collection(firestore, 'fixtures');
+    }, [firestore, isAdmin]);
+    const { data: fixtures, isLoading: isLoadingFixtures } = useCollection<Fixture>(fixturesQuery);
+
+    const teamsQuery = useMemoFirebase(() => {
+        if (!firestore || !isAdmin) return null;
+        return collection(firestore, 'teams');
+    }, [firestore, isAdmin]);
+    const { data: teams, isLoading: isLoadingTeams } = useCollection<Team>(teamsQuery);
+
+    useEffect(() => {
+        const checkAdminAuth = async () => {
+            const adminSession = sessionStorage.getItem('admin-authenticated');
+            if (adminSession !== 'true') {
+                router.push('/admin/login');
+                return; // Stop execution if not authenticated
+            }
+            
+            // If authenticated, update state to trigger data fetching
+            setIsAdmin(true);
+            setIsLoading(false); // Auth check is complete
+
+            // Now that we've confirmed the user is an admin, fetch the trades.
+            // This prevents the race condition.
             if (!firestore) return;
 
             setIsLoadingTrades(true);
@@ -133,32 +161,8 @@ export default function AdminPage() {
             }
         };
 
-        fetchAllTrades();
+        checkAdminAuth();
     }, [router, firestore]);
-
-    const usersQuery = useMemoFirebase(() => {
-        if (!firestore || !isAdmin) return null;
-        return collection(firestore, 'users');
-    }, [firestore, isAdmin]);
-    const { data: users, isLoading: isLoadingUsers } = useCollection<User>(usersQuery);
-
-    const marketsQuery = useMemoFirebase(() => {
-        if (!firestore || !isAdmin) return null;
-        return collection(firestore, 'markets');
-    }, [firestore, isAdmin]);
-    const { data: markets, isLoading: isLoadingMarkets } = useCollection<Market>(marketsQuery);
-    
-    const fixturesQuery = useMemoFirebase(() => {
-        if (!firestore || !isAdmin) return null;
-        return collection(firestore, 'fixtures');
-    }, [firestore, isAdmin]);
-    const { data: fixtures, isLoading: isLoadingFixtures } = useCollection<Fixture>(fixturesQuery);
-
-    const teamsQuery = useMemoFirebase(() => {
-        if (!firestore || !isAdmin) return null;
-        return collection(firestore, 'teams');
-    }, [firestore, isAdmin]);
-    const { data: teams, isLoading: isLoadingTeams } = useCollection<Team>(teamsQuery);
 
     if (isLoading) {
         return (
@@ -168,8 +172,9 @@ export default function AdminPage() {
         );
     }
     
+    // This check is redundant due to the redirect, but good for safety
     if (!isAdmin) {
-      return null;
+      return null; 
     }
 
     return (
@@ -348,5 +353,3 @@ export default function AdminPage() {
         </div>
     );
 }
-
-    
