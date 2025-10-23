@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -88,31 +87,46 @@ const MarketRow = ({ market, fixtures, teams }: { market: Market, fixtures: Fixt
 
 export default function AdminPage() {
     const firestore = useFirestore();
-    const { user, isUserLoading } = useUser();
     const router = useRouter();
+    
+    // This state is a placeholder for a real admin auth check
+    const [isAdmin, setIsAdmin] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        // In a real app, you'd have a more robust way of checking admin status.
+        // For this demo, we'll use sessionStorage.
+        const adminSession = sessionStorage.getItem('admin-authenticated');
+        if (adminSession === 'true') {
+            setIsAdmin(true);
+        } else {
+            router.push('/admin/login');
+        }
+        setIsLoading(false);
+    }, [router]);
 
     const usersQuery = useMemoFirebase(() => {
-        if (!firestore || !user) return null; // Don't query if not logged in
+        if (!firestore || !isAdmin) return null; // Don't query if not admin
         return collection(firestore, 'users');
-    }, [firestore, user]);
+    }, [firestore, isAdmin]);
     const { data: users, isLoading: isLoadingUsers } = useCollection<User>(usersQuery);
 
     const marketsQuery = useMemoFirebase(() => {
-        if (!firestore) return null;
+        if (!firestore || !isAdmin) return null;
         return collection(firestore, 'markets');
-    }, [firestore]);
+    }, [firestore, isAdmin]);
     const { data: markets, isLoading: isLoadingMarkets } = useCollection<Market>(marketsQuery);
     
     const fixturesQuery = useMemoFirebase(() => {
-        if (!firestore) return null;
+        if (!firestore || !isAdmin) return null;
         return collection(firestore, 'fixtures');
-    }, [firestore]);
+    }, [firestore, isAdmin]);
     const { data: fixtures, isLoading: isLoadingFixtures } = useCollection<Fixture>(fixturesQuery);
 
     const teamsQuery = useMemoFirebase(() => {
-        if (!firestore) return null;
+        if (!firestore || !isAdmin) return null;
         return collection(firestore, 'teams');
-    }, [firestore]);
+    }, [firestore, isAdmin]);
     const { data: teams, isLoading: isLoadingTeams } = useCollection<Team>(teamsQuery);
 
 
@@ -120,7 +134,7 @@ export default function AdminPage() {
     const [isLoadingTrades, setIsLoadingTrades] = useState(true);
 
     useEffect(() => {
-        if (!firestore || !user) return; // Don't run if not logged in
+        if (!firestore || !isAdmin) return; // Don't run if not admin
 
         const fetchAllTrades = async () => {
             setIsLoadingTrades(true);
@@ -137,15 +151,10 @@ export default function AdminPage() {
         };
 
         fetchAllTrades();
-    }, [firestore, user]);
+    }, [firestore, isAdmin]);
 
-    useEffect(() => {
-        if (!isUserLoading && !user) {
-            router.push('/login');
-        }
-    }, [isUserLoading, user, router]);
 
-    if (isUserLoading || !user) {
+    if (isLoading || !isAdmin) {
         return (
             <div className="flex h-screen w-full items-center justify-center">
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -298,7 +307,7 @@ export default function AdminPage() {
                             <CardHeader>
                                 <CardTitle>Fixtures</CardTitle>
                                 <CardDescription>Fixtures stored in the database.</CardDescription>
-                            </CardHeader>
+                            </Header>
                             <CardContent>
                                <Table>
                                     <TableHeader>
@@ -310,7 +319,7 @@ export default function AdminPage() {
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {isLoadingFixtures ? (
+                                        {isLoadingFixtures || isLoadingTeams ? (
                                             Array.from({ length: 5 }).map((_, i) => (
                                                 <FixtureRow key={i} fixture={{} as Fixture} teams={null} />
                                             ))
@@ -328,5 +337,4 @@ export default function AdminPage() {
             </div>
         </div>
     );
-
-    
+}
