@@ -2,6 +2,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,7 +17,6 @@ import type { User, Trade, Market, Fixture, Team } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatCurrency } from '@/lib/utils';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 
 const FixtureRow = ({ fixture, teams }: { fixture: Fixture, teams: Team[] | null }) => {
     const homeTeam = useMemo(() => teams?.find(t => t.id === fixture.homeTeamId), [teams, fixture.homeTeamId]);
@@ -335,5 +335,3 @@ export default function AdminPage() {
         </div>
     );
 }
-
-    
