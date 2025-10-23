@@ -11,12 +11,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
 import { MoreHorizontal, Loader2 } from "lucide-react";
-import { useCollection, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, doc } from 'firebase/firestore';
-import type { User, Trade, Market, Fixture, Team } from '@/lib/types';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection } from 'firebase/firestore';
+import type { Market, Fixture, Team } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
-import { formatCurrency, formatPercentage } from '@/lib/utils';
-import { formatDistanceToNow } from 'date-fns';
 
 const FixtureRow = ({ fixture, teams }: { fixture: Fixture, teams: Team[] | null }) => {
     const homeTeam = useMemo(() => teams?.find(t => t.id === fixture.homeTeamId), [teams, fixture.homeTeamId]);
@@ -94,17 +92,6 @@ export default function AdminDashboard() {
     const [isLoading, setIsLoading] = useState(true);
     const [isAdmin, setIsAdmin] = useState(false);
 
-    // --- Hardcode a demo user ID to fetch specific data ---
-    const demoUserId = 'cricket_fan_123';
-
-    // Fetch a single user's document.
-    const userQuery = useMemoFirebase(() => (firestore && isAdmin ? doc(firestore, 'users', demoUserId) : null), [firestore, isAdmin]);
-    const { data: singleUser, isLoading: isLoadingUsers } = useDoc<User>(userQuery);
-
-    // Fetch trades for that single user.
-    const tradesQuery = useMemoFirebase(() => (firestore && isAdmin ? collection(firestore, `users/${demoUserId}/trades`) : null), [firestore, isAdmin]);
-    const { data: userTrades, isLoading: isLoadingTrades } = useCollection<Trade>(tradesQuery);
-    
     const marketsQuery = useMemoFirebase(() => (firestore && isAdmin ? collection(firestore, 'markets') : null), [firestore, isAdmin]);
     const { data: markets, isLoading: isLoadingMarkets } = useCollection<Market>(marketsQuery);
     
@@ -141,7 +128,7 @@ export default function AdminDashboard() {
       return null; 
     }
 
-    const isDataLoading = isLoadingUsers || isLoadingMarkets || isLoadingFixtures || isLoadingTeams || isLoadingTrades;
+    const isDataLoading = isLoadingMarkets || isLoadingFixtures || isLoadingTeams;
 
     return (
         <div className="container mx-auto py-8">
@@ -163,39 +150,12 @@ export default function AdminDashboard() {
                         <Card>
                             <CardHeader>
                                 <CardTitle>User Management</CardTitle>
-                                <CardDescription>Displaying a single demo user. A secure backend function is required to list all users.</CardDescription>
+                                <CardDescription>Displaying all users requires a secure backend function.</CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Email</TableHead>
-                                            <TableHead>Handle</TableHead>
-                                            <TableHead>Role</TableHead>
-                                            <TableHead>User ID</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {isLoadingUsers ? (
-                                            <TableRow>
-                                                <TableCell colSpan={4}><Skeleton className="h-4 w-full" /></TableCell>
-                                            </TableRow>
-                                        ) : singleUser ? (
-                                            <TableRow>
-                                                <TableCell>{singleUser.email}</TableCell>
-                                                <TableCell>{singleUser.handle}</TableCell>
-                                                <TableCell><Badge variant="outline">{singleUser.role}</Badge></TableCell>
-                                                <TableCell>{singleUser.id}</TableCell>
-                                            </TableRow>
-                                        ) : (
-                                            <TableRow>
-                                                <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
-                                                    Could not load demo user.
-                                                </TableCell>
-                                            </TableRow>
-                                        )}
-                                    </TableBody>
-                                </Table>
+                                <div className="text-center py-8 text-muted-foreground">
+                                    Admin user list must be loaded via a secure backend function.
+                                </div>
                             </CardContent>
                         </Card>
                     </TabsContent>
@@ -203,52 +163,12 @@ export default function AdminDashboard() {
                         <Card>
                             <CardHeader>
                                 <CardTitle>All Trades</CardTitle>
-                                <CardDescription>Displaying trades for a single demo user. A secure backend function is required to list all trades.</CardDescription>
+                                <CardDescription>Displaying all user trades requires a secure backend function.</CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Time</TableHead>
-                                            <TableHead>Market ID</TableHead>
-                                            <TableHead>User ID</TableHead>
-                                            <TableHead>Side</TableHead>
-                                            <TableHead>Amount</TableHead>
-                                            <TableHead className="text-right">Shares</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {isLoadingTrades ? (
-                                             Array.from({ length: 3 }).map((_, i) => (
-                                                <TableRow key={i}>
-                                                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                                                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                                                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                                                    <TableCell><Skeleton className="h-6 w-12" /></TableCell>
-                                                    <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                                                    <TableCell><Skeleton className="h-4 w-16" /></TableCell>
-                                                </TableRow>
-                                            ))
-                                        ) : userTrades && userTrades.length > 0 ? (
-                                            userTrades.map(trade => (
-                                                <TableRow key={trade.id}>
-                                                    <TableCell>{formatDistanceToNow(new Date(trade.createdAt), { addSuffix: true })}</TableCell>
-                                                    <TableCell className="font-mono text-xs">{trade.marketId}</TableCell>
-                                                    <TableCell className="font-mono text-xs">{trade.uid}</TableCell>
-                                                    <TableCell><Badge variant="outline">{trade.side}</Badge></TableCell>
-                                                    <TableCell>{formatCurrency(trade.amount, '')}</TableCell>
-                                                    <TableCell className="text-right">{trade.shares.toFixed(2)}</TableCell>
-                                                </TableRow>
-                                            ))
-                                        ) : (
-                                            <TableRow>
-                                                <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                                                    No trades found for demo user.
-                                                </TableCell>
-                                            </TableRow>
-                                        )}
-                                    </TableBody>
-                                </Table>
+                                <div className="text-center py-8 text-muted-foreground">
+                                    Admin trade list must be loaded via a secure backend function.
+                                </div>
                             </CardContent>
                         </Card>
                     </TabsContent>
@@ -270,7 +190,7 @@ export default function AdminDashboard() {
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {isLoadingMarkets || isLoadingFixtures || isLoadingTeams ? (
+                                        {isDataLoading ? (
                                              Array.from({ length: 5 }).map((_, i) => (
                                                 <MarketRow key={i} market={{} as Market} fixtures={null} teams={null} />
                                             ))
@@ -301,7 +221,7 @@ export default function AdminDashboard() {
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {isLoadingFixtures || isLoadingTeams ? (
+                                        {isDataLoading ? (
                                             Array.from({ length: 5 }).map((_, i) => (
                                                 <FixtureRow key={i} fixture={{} as Fixture} teams={null} />
                                             ))
