@@ -2,15 +2,16 @@
 'use client';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import type { Fixture, Market, Team, Trade, User } from './types';
+import { getApp } from 'firebase/app';
 
-// Helper function to call a callable function in the correct region
-async function callAdmin<T>(name: string, payload?: any): Promise<T> {
+const fx = getFunctions(getApp(), 'us-central1');
+
+async function callAdmin<T = any>(name: string, data: any = {}) {
     try {
-        const functions = getFunctions(undefined, 'us-central1');
-        const callable = httpsCallable(functions, name);
-        const result = await callable(payload);
-        return result.data as T;
-    } catch(e: any) {
+        const fn = httpsCallable(fx, name);
+        const res: any = await fn(data);
+        return res.data as T;
+    } catch (e: any) {
         console.error(`[callAdmin:${name}] error:`, e?.code, e?.message, e?.details);
         throw new Error(`${e?.code ?? 'unknown'}: ${e?.message ?? String(e)}`);
     }
@@ -22,23 +23,10 @@ export type AdminMarket = Pick<Market, 'id' | 'fixtureId' | 'type' | 'state' | '
 export type AdminFixture = Pick<Fixture, 'id' | 'homeTeamId' | 'awayTeamId' | 'startTimeUtc' | 'status'>;
 export type AdminTrade = Pick<Trade, 'id' | 'uid' | 'marketId' | 'side' | 'amount' | 'shares' | 'createdAt'> & { path: string };
 
-// API functions
-export function adminListUsers(): Promise<{ rows: AdminUser[] }> {
-    return callAdmin('listUsers');
-}
-
-export function adminListMarkets(params?: { state?: string }): Promise<{rows: AdminMarket[]}> {
-    return callAdmin('adminListMarkets', params);
-}
-
-export function adminListFixtures(payload?: { dateFrom?: string; dateTo?: string }): Promise<AdminFixture[]> {
-    return callAdmin('adminListFixtures', payload);
-}
-
-export function adminListTrades(): Promise<AdminTrade[]> {
-    return callAdmin('adminListTrades');
-}
-
-export function adminListTeams(): Promise<{rows: Team[]}> {
-    return callAdmin('adminListTeams');
-}
+// API functions (names MUST match exports)
+export const listUsers         = () => callAdmin<{rows:AdminUser[]}>('listUsers');
+export const adminListMarkets  = (p?:{state?:string}) => callAdmin<{rows:AdminMarket[]}>('adminListMarkets', p);
+export const adminListTeams    = () => callAdmin<{rows:Team[]}>('adminListTeams');
+export const adminListFixtures = (p?:{dateFrom?:string; dateTo?:string}) => callAdmin<AdminFixture[]>('adminListFixtures', p);
+export const adminListTrades   = (p?:{limit?:number}) => callAdmin<AdminTrade[]>('adminListTrades', p);
+export const adminPing         = () => callAdmin<{ok: boolean; uid: string}>('adminPing');
