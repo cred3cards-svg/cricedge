@@ -93,7 +93,8 @@ export default function AdminDashboard() {
     const [isAdmin, setIsAdmin] = useState(false);
 
     // Gate queries on isAdmin state. They will be null until isAdmin is true.
-    const usersQuery = useMemoFirebase(() => (firestore && isAdmin ? collection(firestore, 'users') : null), [firestore, isAdmin]);
+    // The 'users' collection query is removed to prevent permission errors.
+    const usersQuery = null;
     const { data: users, isLoading: isLoadingUsers } = useCollection<User>(usersQuery);
 
     const marketsQuery = useMemoFirebase(() => (firestore && isAdmin ? collection(firestore, 'markets') : null), [firestore, isAdmin]);
@@ -105,8 +106,6 @@ export default function AdminDashboard() {
     const teamsQuery = useMemoFirebase(() => (firestore && isAdmin ? collection(firestore, 'teams') : null), [firestore, isAdmin]);
     const { data: teams, isLoading: isLoadingTeams } = useCollection<Team>(teamsQuery);
     
-    // Per instructions, removing the client-side collectionGroup query for trades.
-    // This data should be fetched via a secure callable function.
     const [allTrades, setAllTrades] = useState<Trade[]>([]);
     const [isLoadingTrades, setIsLoadingTrades] = useState(false);
 
@@ -172,29 +171,11 @@ export default function AdminDashboard() {
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {isLoadingUsers ? (
-                                            Array.from({ length: 5 }).map((_, i) => (
-                                                <TableRow key={i}>
-                                                    <TableCell><Skeleton className="h-4 w-48" /></TableCell>
-                                                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                                                    <TableCell><Skeleton className="h-4 w-12" /></TableCell>
-                                                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                                                </TableRow>
-                                            ))
-                                        ) : (
-                                            users?.map((user) => (
-                                                <TableRow key={user.id}>
-                                                    <TableCell className="font-medium">{user.email}</TableCell>
-                                                    <TableCell>{user.handle}</TableCell>
-                                                    <TableCell>
-                                                        <Badge variant={user.role === 'admin' ? 'destructive' : 'outline'}>
-                                                            {user.role}
-                                                        </Badge>
-                                                    </TableCell>
-                                                    <TableCell className="text-muted-foreground text-xs">{user.id}</TableCell>
-                                                </TableRow>
-                                            ))
-                                        )}
+                                        <TableRow>
+                                            <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                                                Admin user list must be loaded via a secure backend function.
+                                            </TableCell>
+                                        </TableRow>
                                     </TableBody>
                                 </Table>
                             </CardContent>
@@ -219,24 +200,11 @@ export default function AdminDashboard() {
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {isLoadingTrades ? (
-                                             Array.from({ length: 5 }).map((_, i) => (
-                                                <TableRow key={i}>
-                                                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                                                    <TableCell><Skeleton className="h-4 w-40" /></TableCell>
-                                                    <TableCell><Skeleton className="h-4 w-40" /></TableCell>
-                                                    <TableCell><Skeleton className="h-6 w-12" /></TableCell>
-                                                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                                                    <TableCell className="text-right"><Skeleton className="h-4 w-16" /></TableCell>
-                                                </TableRow>
-                                            ))
-                                        ) : (
-                                             <TableRow>
-                                                <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                                                    Admin trade list must be loaded via a secure backend function.
-                                                </TableCell>
-                                            </TableRow>
-                                        )}
+                                        <TableRow>
+                                            <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                                                Admin trade list must be loaded via a secure backend function.
+                                            </TableCell>
+                                        </TableRow>
                                     </TableBody>
                                 </Table>
                             </CardContent>
@@ -309,4 +277,5 @@ export default function AdminDashboard() {
             </div>
         </div>
     );
-}
+
+    
