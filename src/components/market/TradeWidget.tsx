@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -7,11 +8,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import type { Market, Pool, Team } from '@/lib/types';
+import type { Market, Pool, Team, Trade } from '@/lib/types';
 import { formatCurrency, formatPercentage } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { CheckCircle } from 'lucide-react';
+import { useUser, useFirestore, addDocumentNonBlocking } from '@/firebase';
+import { collection } from 'firebase/firestore';
 
 type TradeWidgetProps = {
   market: Market;
@@ -24,9 +27,12 @@ export default function TradeWidget({ market, pool, homeTeam, awayTeam }: TradeW
   const [activeTab, setActiveTab] = useState<'yes' | 'no'>('yes');
   const [amount, setAmount] = useState('');
   const { toast } = useToast();
+  const { user } = useUser();
+  const firestore = useFirestore();
 
   const handleTrade = () => {
-    if (!amount || parseFloat(amount) <= 0) {
+    const numAmount = parseFloat(amount);
+    if (!numAmount || numAmount <= 0) {
       toast({
         title: "Invalid Amount",
         description: "Please enter a valid amount to trade.",
@@ -34,9 +40,36 @@ export default function TradeWidget({ market, pool, homeTeam, awayTeam }: TradeW
       });
       return;
     }
+
+    if (!user || !firestore) {
+        toast({
+            title: "Not Logged In",
+            description: "Please log in to place a trade.",
+            variant: 'destructive'
+        });
+        return;
+    }
+    
+    // Create the trade object
+    const tradeData: Omit<Trade, 'id' | 'uid' | 'clientTxnId'> = {
+        marketId: market.id,
+        side: activeTab === 'yes' ? 'YES' : 'NO',
+        amount: numAmount,
+        shares: tradePreview.shares,
+        avgPrice: tradePreview.avgPrice,
+        fee: tradePreview.fee,
+        createdAt: Date.now(),
+    };
+    
+    // Create a reference to the user's trades subcollection
+    const tradesCollectionRef = collection(firestore, `users/${user.uid}/trades`);
+    
+    // Use the non-blocking function to add the document
+    addDocumentNonBlocking(tradesCollectionRef, tradeData);
+
     toast({
-        title: "Trade Placed (Demo)",
-        description: `You bought ${tradePreview.shares.toFixed(2)} shares of ${activeTab.toUpperCase()} for ${formatCurrency(parseFloat(amount))}.`,
+        title: "Trade Placed",
+        description: `You bought ${tradePreview.shares.toFixed(2)} shares of ${activeTab.toUpperCase()} for ${formatCurrency(numAmount)}.`,
         action: <CheckCircle className="text-green-500" />
     });
     setAmount('');
@@ -125,8 +158,8 @@ export default function TradeWidget({ market, pool, homeTeam, awayTeam }: TradeW
                     </div>
                 </div>
 
-                <Button className="w-full bg-accent text-accent-foreground hover:bg-accent/90" onClick={handleTrade} disabled={!amount || parseFloat(amount) <= 0}>
-                    Place Trade
+                <Button className="w-full bg-accent text-accent-foreground hover:bg-accent/90" onClick={handleTrade} disabled={!amount || parseFloat(amount) <= 0 || !user}>
+                    {user ? 'Place Trade' : 'Login to Trade'}
                 </Button>
             </div>
           </Tabs>
