@@ -1,41 +1,42 @@
+
 // src/firebase/admin.ts
 import * as admin from 'firebase-admin';
 
-// This is a server-side only file.
-// Do not import this on the client.
-
-// Because this is a server-only file, we can use the service account credentials.
-// App Hosting automatically sets the GOOGLE_APPLICATION_CREDENTIALS environment
-// variable. The Admin SDK automatically uses this variable to initialize.
-const serviceAccount = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+// This is a server-side only file. Do not import this on the client.
 
 let adminApp: admin.app.App;
 
-function initializeAdminApp() {
-  if (admin.apps.length > 0) {
-    return admin.app();
+/**
+ * Initializes the Firebase Admin SDK, handling both deployed and local/emulator environments.
+ * It ensures that the app is initialized only once.
+ */
+function initializeAdminApp(): admin.app.App {
+  // If the app is already initialized, return it.
+  if (admin.apps.length > 0 && admin.apps[0]) {
+    return admin.apps[0];
   }
 
-  const credential = serviceAccount 
-    ? admin.credential.applicationDefault() 
-    : undefined;
-
-  // In a deployed App Hosting environment, the SDK will automatically find the project ID
-  // and credentials. For local development, you might need to specify them,
-  // but App Hosting's emulation layer often handles this.
-  adminApp = admin.initializeApp({
-    credential
-  });
+  // App Hosting automatically sets GOOGLE_APPLICATION_CREDENTIALS.
+  // The Admin SDK uses this variable to initialize.
+  // In a local/emulator environment, this variable may not be set,
+  // so we initialize without explicit credentials, allowing it to
+  // connect to the emulators if they are running.
+  try {
+    adminApp = admin.initializeApp({
+      credential: admin.credential.applicationDefault(),
+    });
+  } catch (e) {
+    console.log('Initializing admin app without explicit credentials for local/emulator environment.');
+    adminApp = admin.initializeApp();
+  }
 
   return adminApp;
 }
 
 /**
- * Returns the singleton instance of the Firebase Admin App.
+ * Returns a singleton instance of the Firebase Admin App.
+ * This is the primary way to get the admin app instance in the application.
  */
 export function getAdminApp(): admin.app.App {
-  if (admin.apps.length === 0) {
-    return initializeAdminApp();
-  }
-  return admin.app();
+  return initializeAdminApp();
 }
