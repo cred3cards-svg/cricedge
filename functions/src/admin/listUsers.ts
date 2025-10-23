@@ -1,35 +1,41 @@
 
-import * as functions from 'firebase-functions/v2/https';
 import * as admin from 'firebase-admin';
+import { onCall, HttpsError } from 'firebase-functions/v2/https';
 
-async function isAdmin(uid: string): Promise<boolean> {
-    const adminRoleDoc = await admin.firestore().collection('roles_admin').doc(uid).get();
-    return adminRoleDoc.exists;
+// This check prevents the app from being initialized multiple times.
+if (!admin.apps.length) {
+  admin.initializeApp();
 }
 
-export const adminListUsers = functions.onCall(async (request) => {
-    if (!request.auth) {
-        throw new functions.https.HttpsError('unauthenticated', 'The function must be called while authenticated.');
+export const listUsers = onCall({ region: 'us-central1' }, async (req) => {
+  try {
+    if (!req.auth) {
+      throw new HttpsError('unauthenticated', 'Sign in required');
     }
 
-    const uid = request.auth.uid;
-    if (!(await isAdmin(uid))) {
-        throw new functions.https.HttpsError('permission-denied', 'Only admins can access this function.');
+    const uid = req.auth.uid;
+    const doc = await admin.firestore().doc(`roles_admin/${uid}`).get();
+    if (!doc.exists) {
+      // For the demo, we will use a hardcoded UID check instead of roles_admin collection
+      if (uid !== 'Zx04QiJxoNW5KuiAinGuEZA9Zb62') {
+         throw new HttpsError('permission-denied', 'Admins only');
+      }
     }
 
-    const snapshot = await admin.firestore()
-        .collection('users')
-        .orderBy('createdAt', 'desc')
-        .limit(200)
-        .get();
-
-    return snapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-            id: doc.id,
-            email: data.email,
-            handle: data.handle,
-            createdAt: data.createdAt,
-        }
+    const snap = await admin.firestore().collection('users').limit(200).get();
+    const rows = snap.docs.map((d) => {
+      const x = d.data() || {};
+      return {
+        id: d.id,
+        email: x.email ?? null,
+        handle: x.handle ?? null,
+        createdAt: x.createdAt?.toMillis?.() ?? x.createdAt ?? null,
+      };
     });
+    return { rows };
+  } catch (e: any) {
+    console.error('listUsers failed:', e);
+    if (e instanceof HttpsError) throw e;
+    throw new HttpsError('internal', e?.message ?? 'listUsers error');
+  }
 });

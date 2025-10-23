@@ -3,28 +3,35 @@
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import type { Fixture, Market, Team, Trade, User } from './types';
 
-// Helper function to call a callable function
+// This is a temporary admin API client. In a real app, this would be more robust.
+// It uses TanStack Query to fetch data from the callable functions.
+
+// Helper function to call a callable function in the correct region
 async function callAdmin<T>(name: string, payload?: any): Promise<T> {
-    const functions = getFunctions();
-    const callable = httpsCallable(functions, name);
-    const result = await callable(payload);
-    return result.data as T;
+    try {
+        const functions = getFunctions(undefined, 'us-central1');
+        const callable = httpsCallable(functions, name);
+        const result = await callable(payload);
+        return result.data as T;
+    } catch(e: any) {
+        console.error(`[callAdmin:${name}] error:`, e?.code, e?.message, e?.details);
+        throw new Error(`${e?.code ?? 'unknown'}: ${e?.message ?? String(e)}`);
+    }
 }
 
 // Explicit types for what the admin functions will return.
-// These might be subsets of the main types.
-export type AdminUser = Pick<User, 'id' | 'email' | 'handle' | 'createdAt'>;
+export type AdminUser = { id: string; email?: string; handle?: string; createdAt?: number };
 export type AdminMarket = Pick<Market, 'id' | 'fixtureId' | 'type' | 'state' | 'feeBps' | 'publishedAt'> & { startTimeUtc?: number };
 export type AdminFixture = Pick<Fixture, 'id' | 'homeTeamId' | 'awayTeamId' | 'startTimeUtc' | 'status'>;
 export type AdminTrade = Pick<Trade, 'id' | 'uid' | 'marketId' | 'side' | 'amount' | 'shares' | 'createdAt'> & { path: string };
 
 // API functions
-export function listUsers(): Promise<AdminUser[]> {
-    return callAdmin('admin-listUsers');
+export async function adminListUsers(): Promise<{ rows: AdminUser[] }> {
+    return callAdmin('listUsers');
 }
 
 export function listMarkets(payload?: { state?: Market['state'] }): Promise<AdminMarket[]> {
-    return callAdmin('admin-listMarkets', payload);
+    return callAdmin('adminListMarkets', payload);
 }
 
 export function listFixtures(payload?: { dateFrom?: string; dateTo?: string }): Promise<AdminFixture[]> {
@@ -32,12 +39,9 @@ export function listFixtures(payload?: { dateFrom?: string; dateTo?: string }): 
 }
 
 export function listTrades(): Promise<AdminTrade[]> {
-    return callAdmin('admin-listTrades');
+    return callAdmin('adminListTrades');
 }
 
-// This is a public data fetch, so it can be called directly or via a callable
-// For consistency, we can wrap it, but it doesn't require admin privileges.
-// In a real app, this could just be a direct firestore query from the client if rules allow.
 export function listTeams(): Promise<Team[]> {
     return callAdmin('admin-listTeams');
 }

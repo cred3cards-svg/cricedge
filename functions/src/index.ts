@@ -1,6 +1,7 @@
 
 import * as admin from 'firebase-admin';
 
+// Initialize the app once in the main entry file.
 admin.initializeApp();
 
 // Export all functions from the admin directory
