@@ -16,20 +16,23 @@ export const adminListFixtures = onCall({ region: 'us-central1' }, async (req) =
     const uid = req.auth.uid;
     const adminDoc = await admin.firestore().doc(`roles_admin/${uid}`).get();
     if (!adminDoc.exists) {
-      // For the demo, we will use a hardcoded UID check instead of roles_admin collection
-      if (uid !== 'Zx04QiJxoNW5KuiAinGuEZA9Zb62') {
-         throw new HttpsError('permission-denied', 'Admins only');
-      }
+        // Use a hardcoded UID for the demo if the roles_admin doc doesn't exist
+        if (uid !== 'Zx04QiJxoNW5KuiAinGuEZA9Zb62') {
+            throw new HttpsError('permission-denied', 'Admins only');
+        }
     }
 
     const { dateFrom, dateTo } = req.data;
     let query: admin.firestore.Query = admin.firestore().collection('fixtures');
 
     if (dateFrom) {
-        query = query.where('startTimeUtc', '>=', new Date(dateFrom).getTime());
+        // Timestamps in Firestore are often numbers, not Date objects.
+        const fromTimestamp = new Date(dateFrom).getTime();
+        query = query.where('startTimeUtc', '>=', fromTimestamp);
     }
     if (dateTo) {
-        query = query.where('startTimeUtc', '<=', new Date(dateTo).getTime());
+        const toTimestamp = new Date(dateTo).getTime();
+        query = query.where('startTimeUtc', '<=', toTimestamp);
     }
 
     query = query.orderBy('startTimeUtc', 'asc').limit(200);
@@ -37,11 +40,14 @@ export const adminListFixtures = onCall({ region: 'us-central1' }, async (req) =
     
     return snapshot.docs.map(doc => {
         const data = doc.data();
+        // The .toMillis() function only exists on Firestore Timestamp objects.
+        // The data might already be a number if it came from our seed script.
+        const startTime = data.startTimeUtc?.toMillis?.() ?? data.startTimeUtc ?? null;
         return {
             id: doc.id,
             homeTeamId: data.homeTeamId,
             awayTeamId: data.awayTeamId,
-            startTimeUtc: data.startTimeUtc?.toMillis?.() ?? data.startTimeUtc ?? null,
+            startTimeUtc: startTime,
             status: data.status,
         };
     });

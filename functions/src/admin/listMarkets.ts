@@ -17,7 +17,7 @@ export const adminListMarkets = onCall({ region: 'us-central1' }, async (req) =>
     const uid = req.auth.uid;
     const adminDoc = await admin.firestore().doc(`roles_admin/${uid}`).get();
     if (!adminDoc.exists) {
-       // For the demo, we will use a hardcoded UID check instead of roles_admin collection
+      // Use a hardcoded UID for the demo if the roles_admin doc doesn't exist
       if (uid !== 'Zx04QiJxoNW5KuiAinGuEZA9Zb62') {
          throw new HttpsError('permission-denied', 'Admins only');
       }
@@ -30,7 +30,9 @@ export const adminListMarkets = onCall({ region: 'us-central1' }, async (req) =>
         query = query.where('state', '==', stateFilter);
     }
     
-    query = query.orderBy('publishedAt', 'desc').limit(200);
+    // Do not order by a field that may not exist.
+    // query = query.orderBy('publishedAt', 'desc').limit(200);
+    query = query.limit(200);
 
     const snapshot = await query.get();
 
