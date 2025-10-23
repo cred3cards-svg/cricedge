@@ -1,7 +1,11 @@
 
 import * as admin from 'firebase-admin';
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
-if (!admin.apps.length) admin.initializeApp();
+
+// This check prevents the app from being initialized multiple times.
+if (!admin.apps.length) {
+  admin.initializeApp();
+}
 
 export const adminListMarkets = onCall({ region: 'us-central1' }, async (req) => {
   try {
@@ -19,7 +23,9 @@ export const adminListMarkets = onCall({ region: 'us-central1' }, async (req) =>
     let q: admin.firestore.Query = admin.firestore().collection('markets');
 
     // only add filter if provided (avoid composite index surprises)
-    if (state) q = q.where('state', '==', state);
+    if (state) {
+        q = q.where('state', '==', state);
+    }
 
     // Avoid orderBy on possibly-missing fields; safest for mixed data
     const snap = await q.limit(200).get();

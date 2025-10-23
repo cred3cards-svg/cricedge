@@ -23,7 +23,6 @@ export const adminListFixtures = onCall({ region: 'us-central1' }, async (req) =
     let query: admin.firestore.Query = admin.firestore().collection('fixtures');
 
     if (dateFrom) {
-        // Timestamps in Firestore are often numbers, not Date objects.
         const fromTimestamp = new Date(dateFrom).getTime();
         query = query.where('startTimeUtc', '>=', fromTimestamp);
     }
@@ -37,8 +36,6 @@ export const adminListFixtures = onCall({ region: 'us-central1' }, async (req) =
     
     return snapshot.docs.map(doc => {
         const data = doc.data();
-        // The .toMillis() function only exists on Firestore Timestamp objects.
-        // The data might already be a number if it came from our seed script.
         const startTime = data.startTimeUtc?.toMillis?.() ?? data.startTimeUtc ?? null;
         return {
             id: doc.id,

@@ -1,7 +1,11 @@
 
 import * as admin from 'firebase-admin';
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
-if (!admin.apps.length) admin.initializeApp();
+
+// This check prevents the app from being initialized multiple times.
+if (!admin.apps.length) {
+  admin.initializeApp();
+}
 
 export const adminListTeams = onCall({ region: 'us-central1' }, async (req) => {
   try {
