@@ -6,11 +6,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useAuth } from '@/firebase';
-import { initiateEmailSignUp } from '@/firebase/non-blocking-login';
+import { useAuth, useFirestore }from '@/firebase';
+import { initiateEmailSignUp, setDocumentNonBlocking } from '@/firebase';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { doc } from 'firebase/firestore';
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
     return (
@@ -26,6 +28,7 @@ function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
 
 export default function SignupPage() {
   const auth = useAuth();
+  const firestore = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
   const [email, setEmail] = useState('');
@@ -34,8 +37,32 @@ export default function SignupPage() {
 
   const handleSignup = async () => {
     try {
-      initiateEmailSignUp(auth, email, password);
-      // In a real app you'd also create a user document in Firestore here.
+      // Use the blocking version here to ensure we get the user credential back
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      if (user) {
+        // Create the user profile document in Firestore
+        const userRef = doc(firestore, "users", user.uid);
+        const userData = {
+            email: user.email,
+            handle: handle,
+            role: 'user',
+            kycStatus: 'none',
+            createdAt: Date.now(),
+        };
+        setDocumentNonBlocking(userRef, userData, { merge: true });
+
+        // Create the user's wallet document
+        const walletRef = doc(firestore, "wallets", user.uid);
+        const walletData = {
+            balanceDemo: 1000, // Initial demo balance
+            lockedDemo: 0,
+            updatedAt: Date.now(),
+        };
+        setDocumentNonBlocking(walletRef, walletData, { merge: true });
+      }
+      
       toast({
         title: 'Account Created',
         description: 'Your account has been successfully created.',
