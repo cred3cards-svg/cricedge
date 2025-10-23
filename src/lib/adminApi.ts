@@ -23,22 +23,22 @@ export type AdminFixture = Pick<Fixture, 'id' | 'homeTeamId' | 'awayTeamId' | 's
 export type AdminTrade = Pick<Trade, 'id' | 'uid' | 'marketId' | 'side' | 'amount' | 'shares' | 'createdAt'> & { path: string };
 
 // API functions
-export async function adminListUsers(): Promise<{ rows: AdminUser[] }> {
+export function adminListUsers(): Promise<{ rows: AdminUser[] }> {
     return callAdmin('listUsers');
 }
 
-export function listMarkets(params?: { state?: string }): Promise<{rows: AdminMarket[]}> {
+export function adminListMarkets(params?: { state?: string }): Promise<{rows: AdminMarket[]}> {
     return callAdmin('adminListMarkets', params);
 }
 
-export function listFixtures(payload?: { dateFrom?: string; dateTo?: string }): Promise<AdminFixture[]> {
+export function adminListFixtures(payload?: { dateFrom?: string; dateTo?: string }): Promise<AdminFixture[]> {
     return callAdmin('adminListFixtures', payload);
 }
 
-export function listTrades(): Promise<AdminTrade[]> {
+export function adminListTrades(): Promise<AdminTrade[]> {
     return callAdmin('adminListTrades');
 }
 
-export function listTeams(): Promise<{rows: Team[]}> {
+export function adminListTeams(): Promise<{rows: Team[]}> {
     return callAdmin('adminListTeams');
 }

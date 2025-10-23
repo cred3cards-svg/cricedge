@@ -2,7 +2,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { listFixtures, listTeams } from '@/lib/adminApi';
+import { adminListFixtures, adminListTeams } from '@/lib/adminApi';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import Loading from './Loading';
 import ErrorMessage from './ErrorMessage';
@@ -13,7 +13,7 @@ import { useMemo } from 'react';
 export function AdminFixturesTable() {
     const { data: teamsData, isLoading: isLoadingTeams } = useQuery({
         queryKey: ['admin-teams'],
-        queryFn: listTeams
+        queryFn: adminListTeams
     });
 
     const teamsMap = useMemo(() => {
@@ -23,7 +23,7 @@ export function AdminFixturesTable() {
 
     const { data, error, isLoading } = useQuery({
         queryKey: ['admin-fixtures'],
-        queryFn: listFixtures,
+        queryFn: adminListFixtures,
         enabled: !isLoadingTeams, // Only fetch fixtures after teams are loaded
     });
     

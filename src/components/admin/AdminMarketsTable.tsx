@@ -2,7 +2,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { listMarkets } from '@/lib/adminApi';
+import { adminListMarkets } from '@/lib/adminApi';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import Loading from './Loading';
 import ErrorMessage from './ErrorMessage';
@@ -17,7 +17,7 @@ export function AdminMarketsTable({ teamsMap }: { teamsMap: Map<string, string> 
     
     const { data, error, isLoading } = useQuery({
         queryKey: ['admin-markets', stateFilter],
-        queryFn: () => listMarkets({ state: stateFilter === 'ALL' ? undefined : stateFilter }),
+        queryFn: () => adminListMarkets({ state: stateFilter === 'ALL' ? undefined : stateFilter }),
     });
 
     const getFixtureTeams = (fixtureId: string) => {

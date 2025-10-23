@@ -2,7 +2,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { listTrades } from '@/lib/adminApi';
+import { adminListTrades } from '@/lib/adminApi';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import Loading from './Loading';
 import ErrorMessage from './ErrorMessage';
@@ -14,7 +14,7 @@ import Link from 'next/link';
 export function AdminTradesTable() {
     const { data, error, isLoading } = useQuery({
         queryKey: ['admin-trades'],
-        queryFn: listTrades,
+        queryFn: adminListTrades,
     });
     
     if (isLoading) return <Loading message="Fetching trades..." />;
