@@ -51,13 +51,15 @@ export default function TradeWidget({ market, pool, homeTeam, awayTeam }: TradeW
     }
     
     // Create the trade object
-    const tradeData: Omit<Trade, 'id' | 'uid' | 'clientTxnId'> = {
+    const tradeData: Omit<Trade, 'id'> = {
+        uid: user.uid,
         marketId: market.id,
         side: activeTab === 'yes' ? 'YES' : 'NO',
         amount: numAmount,
         shares: tradePreview.shares,
         avgPrice: tradePreview.avgPrice,
         fee: tradePreview.fee,
+        clientTxnId: `txn_${user.uid}_${Date.now()}`, // Simple unique ID
         createdAt: Date.now(),
     };
     
