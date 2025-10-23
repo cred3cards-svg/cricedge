@@ -40,7 +40,7 @@ export const adminListMarkets = onCall({ region: 'us-central1' }, async (req) =>
 
     return { rows };
   } catch (e: any) {
-    console.error('listMarkets failed:', e);
+    console.error('adminListMarkets failed:', e);
     if (e instanceof HttpsError) throw e;
     throw new HttpsError('internal', e?.message ?? 'listMarkets error');
   }

@@ -3,9 +3,6 @@
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import type { Fixture, Market, Team, Trade, User } from './types';
 
-// This is a temporary admin API client. In a real app, this would be more robust.
-// It uses TanStack Query to fetch data from the callable functions.
-
 // Helper function to call a callable function in the correct region
 async function callAdmin<T>(name: string, payload?: any): Promise<T> {
     try {

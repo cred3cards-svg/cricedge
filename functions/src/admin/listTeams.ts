@@ -20,7 +20,7 @@ export const adminListTeams = onCall({ region: 'us-central1' }, async (req) => {
     const rows = snap.docs.map(d => ({ id: d.id, ...(d.data() || {}) }));
     return { rows };
   } catch (e: any) {
-    console.error('listTeams failed:', e);
+    console.error('adminListTeams failed:', e);
     if (e instanceof HttpsError) throw e;
     throw new HttpsError('internal', e?.message ?? 'listTeams error');
   }
