@@ -99,7 +99,7 @@ export default function AdminPage() {
     const [allTrades, setAllTrades] = useState<Trade[]>([]);
     const [isLoadingTrades, setIsLoadingTrades] = useState(true);
 
-    // Gate queries on isAdmin state
+    // Gate queries on isAdmin state. They will be null until isAdmin is true.
     const usersQuery = useMemoFirebase(() => (firestore && isAdmin ? collection(firestore, 'users') : null), [firestore, isAdmin]);
     const { data: users, isLoading: isLoadingUsers } = useCollection<User>(usersQuery);
 
@@ -118,7 +118,7 @@ export default function AdminPage() {
             const adminSession = sessionStorage.getItem('admin-authenticated');
             if (adminSession !== 'true') {
                 router.push('/admin/login');
-                // Don't proceed to fetch data
+                // Don't proceed to fetch data if not admin
                 return;
             }
             
@@ -132,6 +132,7 @@ export default function AdminPage() {
             setIsLoadingTrades(true);
             try {
                 const trades: Trade[] = [];
+                // This query will now only run when firestore is available and isAdmin is true
                 const tradesQuery = query(collectionGroup(firestore, 'trades'));
                 const querySnapshot = await getDocs(tradesQuery);
                 querySnapshot.forEach((doc) => {
@@ -140,6 +141,7 @@ export default function AdminPage() {
                 trades.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
                 setAllTrades(trades);
             } catch (error) {
+                console.error("Error fetching trades collection group:", error);
                 // Create a contextual error for the collection group query
                 const contextualError = new FirestorePermissionError({
                     operation: 'list',
@@ -166,6 +168,8 @@ export default function AdminPage() {
     if (!isAdmin) {
       return null; 
     }
+
+    const isDataLoading = isLoadingUsers || isLoadingMarkets || isLoadingFixtures || isLoadingTeams || isLoadingTrades;
 
     return (
         <div className="container mx-auto py-8">
@@ -342,5 +346,4 @@ export default function AdminPage() {
             </div>
         </div>
     );
-
-    
+}
