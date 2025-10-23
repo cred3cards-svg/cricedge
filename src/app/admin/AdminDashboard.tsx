@@ -93,8 +93,7 @@ export default function AdminDashboard() {
     const [isAdmin, setIsAdmin] = useState(false);
 
     // Gate queries on isAdmin state. They will be null until isAdmin is true.
-    // The 'users' collection query is removed to prevent permission errors.
-    const usersQuery = null;
+    const usersQuery = null; // Listing users is forbidden by client rules.
     const { data: users, isLoading: isLoadingUsers } = useCollection<User>(usersQuery);
 
     const marketsQuery = useMemoFirebase(() => (firestore && isAdmin ? collection(firestore, 'markets') : null), [firestore, isAdmin]);
@@ -106,6 +105,8 @@ export default function AdminDashboard() {
     const teamsQuery = useMemoFirebase(() => (firestore && isAdmin ? collection(firestore, 'teams') : null), [firestore, isAdmin]);
     const { data: teams, isLoading: isLoadingTeams } = useCollection<Team>(teamsQuery);
     
+    // All trades must be loaded via a secure backend function (e.g., a Cloud Function)
+    // that uses a collectionGroup query. Client-side fetching is not secure or permitted.
     const [allTrades, setAllTrades] = useState<Trade[]>([]);
     const [isLoadingTrades, setIsLoadingTrades] = useState(false);
 
@@ -146,7 +147,7 @@ export default function AdminDashboard() {
                     <p className="text-muted-foreground">Manage markets, fixtures, and application settings.</p>
                 </header>
 
-                <Tabs defaultValue="users">
+                <Tabs defaultValue="markets">
                     <TabsList>
                         <TabsTrigger value="users">Users</TabsTrigger>
                         <TabsTrigger value="trades">All Trades</TabsTrigger>
@@ -277,5 +278,6 @@ export default function AdminDashboard() {
             </div>
         </div>
     );
+}
 
     
