@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
 import { MoreHorizontal, Loader2 } from "lucide-react";
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { collection, collectionGroup, getDocs, query } from 'firebase/firestore';
 import type { User, Trade, Market, Fixture, Team } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -19,6 +19,7 @@ import { formatCurrency } from '@/lib/utils';
 import Link from 'next/link';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+
 
 const FixtureRow = ({ fixture, teams }: { fixture: Fixture, teams: Team[] | null }) => {
     const homeTeam = useMemo(() => teams?.find(t => t.id === fixture.homeTeamId), [teams, fixture.homeTeamId]);
@@ -148,11 +149,12 @@ export default function AdminPage() {
                 trades.sort((a, b) => (new Date(b.createdAt).getTime()) - (new Date(a.createdAt).getTime()));
                 setAllTrades(trades);
             } catch (error) {
-                console.error("Firestore permission error fetching trades:", error);
+                // Create a contextual error for the collection group query
                 const contextualError = new FirestorePermissionError({
                     operation: 'list',
                     path: 'trades', // path for a collection group query
                 });
+                // Emit the error using the global emitter
                 errorEmitter.emit('permission-error', contextualError);
             } finally {
                 setIsLoadingTrades(false);
