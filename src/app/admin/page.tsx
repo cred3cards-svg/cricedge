@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -97,7 +98,6 @@ export default function AdminPage() {
     const [allTrades, setAllTrades] = useState<Trade[]>([]);
     const [isLoadingTrades, setIsLoadingTrades] = useState(true);
 
-    // Queries are now memoized but will only be enabled if isAdmin is true.
     const usersQuery = useMemoFirebase(() => {
         if (!firestore || !isAdmin) return null;
         return collection(firestore, 'users');
@@ -127,15 +127,12 @@ export default function AdminPage() {
             const adminSession = sessionStorage.getItem('admin-authenticated');
             if (adminSession !== 'true') {
                 router.push('/admin/login');
-                return; // Stop execution if not authenticated
+                return; 
             }
             
-            // If authenticated, update state to trigger data fetching
             setIsAdmin(true);
-            setIsLoading(false); // Auth check is complete
+            setIsLoading(false);
 
-            // Now that we've confirmed the user is an admin, fetch the trades.
-            // This prevents the race condition.
             if (!firestore) return;
 
             setIsLoadingTrades(true);
@@ -149,12 +146,10 @@ export default function AdminPage() {
                 trades.sort((a, b) => (b.createdAt) - (a.createdAt));
                 setAllTrades(trades);
             } catch (error) {
-                // Create a contextual error for the collection group query
                 const contextualError = new FirestorePermissionError({
                     operation: 'list',
-                    path: 'trades', // path for a collection group query
+                    path: 'trades', 
                 });
-                // Emit the error using the global emitter
                 errorEmitter.emit('permission-error', contextualError);
             } finally {
                 setIsLoadingTrades(false);
@@ -172,7 +167,6 @@ export default function AdminPage() {
         );
     }
     
-    // This check is redundant due to the redirect, but good for safety
     if (!isAdmin) {
       return null; 
     }
