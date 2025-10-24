@@ -5,6 +5,8 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { cn } from '@/lib/utils';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
+import { CricketIcon } from '@/components/icons/CricketIcon';
+import Link from 'next/link';
 
 export const metadata: Metadata = {
   title: 'OnlyWin',
@@ -16,6 +18,8 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const isAuthPage = false; // This might be dynamically determined in a real app based on route
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>

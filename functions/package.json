@@ -2,18 +2,20 @@
   "name": "functions",
   "private": true,
   "main": "lib/index.js",
-  "engines": { "node": "20" },
+  "engines": {
+    "node": "20"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "clean": "rimraf lib || rm -rf lib",
     "deploy": "npm run build && firebase deploy --only functions"
   },
   "dependencies": {
-    "firebase-admin": "^12.6.0",
-    "firebase-functions": "^5.0.0"
+    "firebase-admin": "^13.5.0",
+    "firebase-functions": "^6.6.0"
   },
   "devDependencies": {
-    "typescript": "^5.6.3",
-    "rimraf": "^6.0.1"
+    "rimraf": "^6.0.1",
+    "typescript": "^5.6.3"
   }
 }
