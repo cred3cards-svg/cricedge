@@ -1,6 +1,5 @@
-
 'use client';
-import React from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { adminListUsers } from '@/lib/adminApi';
 import Loading from './Loading';
 import ErrorMessage from './ErrorMessage';
@@ -8,20 +7,14 @@ import { format } from 'date-fns';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 export function AdminUsersTable() {
-  const [rows, setRows] = React.useState<any[] | null>(null);
-  const [err, setErr] = React.useState<Error | null>(null);
+  const { data, error, isLoading } = useQuery({
+    queryKey: ['admin-users'],
+    queryFn: adminListUsers
+  });
 
-  React.useEffect(() => {
-    let alive = true;
-    adminListUsers()
-      .then((r) => alive && setRows(r.rows))
-      .catch((e) => alive && setErr(e));
-    return () => { alive = false; };
-  }, []);
-
-  if (err) return <ErrorMessage error={err} />;
-  if (!rows) return <Loading message="Fetching users..." />;
-  if (!rows.length) return <p className="py-8 text-center text-muted-foreground">No users found.</p>;
+  if (isLoading) return <Loading message="Fetching users..." />;
+  if (error) return <ErrorMessage error={error} />;
+  if (!data || !data.rows || data.rows.length === 0) return <p className="py-8 text-center text-muted-foreground">No users found.</p>;
 
   return (
     <Table>
@@ -34,7 +27,7 @@ export function AdminUsersTable() {
         </TableRow>
       </TableHeader>
       <TableBody>
-        {rows.map(user => (
+        {data.rows.map(user => (
           <TableRow key={user.id}>
             <TableCell className="font-mono text-xs">{user.id}</TableCell>
             <TableCell>{user.handle || 'N/A'}</TableCell>

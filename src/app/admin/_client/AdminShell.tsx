@@ -1,4 +1,3 @@
-
 'use client';
 
 import { AuthGate } from '@/components/auth/AuthGate';
@@ -9,10 +8,24 @@ import { AdminMarketsTable } from '@/components/admin/AdminMarketsTable';
 import { AdminFixturesTable } from '@/components/admin/AdminFixturesTable';
 import { AdminTradesTable } from '@/components/admin/AdminTradesTable';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { adminListTeams } from '@/lib/adminApi';
+import { useQuery } from '@tanstack/react-query';
+import Loading from '@/components/admin/Loading';
 
 const queryClient = new QueryClient();
 
 function AdminDashboard() {
+    const { data: teamsData, isLoading: isLoadingTeams } = useQuery({
+        queryKey: ['admin-teams'],
+        queryFn: adminListTeams
+    });
+
+    const teamsMap = new Map(teamsData?.rows.map(team => [team.id, team.name]) ?? []);
+    
+    if (isLoadingTeams) {
+        return <Loading message="Loading initial data..." />;
+    }
+
     return (
         <div className="container mx-auto py-8">
             <header className="mb-8">
@@ -56,7 +69,7 @@ function AdminDashboard() {
                             <CardDescription>View, publish, lock, and resolve markets.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <AdminMarketsTable teamsMap={new Map()} />
+                            <AdminMarketsTable teamsMap={teamsMap} />
                         </CardContent>
                     </Card>
                 </TabsContent>
@@ -67,7 +80,7 @@ function AdminDashboard() {
                             <CardDescription>View upcoming and past fixtures.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                           <AdminFixturesTable />
+                           <AdminFixturesTable teamsMap={teamsMap} />
                         </CardContent>
                     </Card>
                 </TabsContent>

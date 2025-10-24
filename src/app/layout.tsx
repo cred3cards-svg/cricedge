@@ -18,8 +18,6 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const isAuthPage = false; // This might be dynamically determined in a real app based on route
-
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
