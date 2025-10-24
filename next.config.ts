@@ -31,14 +31,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-   async rewrites() {
-    return [
-      {
-        source: '/tg',
-        destination: '/tg',
-      },
-    ]
-  },
   async headers() {
     return [
       {
@@ -52,5 +44,3 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
-
-    

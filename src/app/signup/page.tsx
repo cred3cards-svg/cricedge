@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useAuth, useFirestore }from '@/firebase';
-import { initiateEmailSignUp, setDocumentNonBlocking } from '@/firebase';
+import { setDocumentNonBlocking } from '@/firebase';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
@@ -34,8 +34,11 @@ export default function SignupPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [handle, setHandle] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
 
   const handleSignup = async () => {
+    setIsLoading(true);
     try {
       // Use the blocking version here to ensure we get the user credential back
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -48,7 +51,6 @@ export default function SignupPage() {
             email: user.email,
             handle: handle,
             role: 'user',
-            kycStatus: 'none',
             createdAt: Date.now(),
         };
         setDocumentNonBlocking(userRef, userData, { merge: true });
@@ -74,56 +76,60 @@ export default function SignupPage() {
         description: error.message,
         variant: 'destructive',
       });
+    } finally {
+        setIsLoading(false);
     }
   };
 
   return (
-    <Card className="mx-auto w-full max-w-sm">
-      <CardHeader>
-        <CardTitle className="text-2xl font-headline">Sign Up</CardTitle>
-        <CardDescription>Enter your information to create an account</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="grid gap-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="handle">Handle</Label>
-              <Input id="handle" placeholder="cricketfan" required value={handle} onChange={(e) => setHandle(e.target.value)} />
+    <div className="flex items-center justify-center py-12">
+        <Card className="mx-auto w-full max-w-sm">
+        <CardHeader>
+            <CardTitle className="text-2xl font-headline">Sign Up</CardTitle>
+            <CardDescription>Enter your information to create an account</CardDescription>
+        </CardHeader>
+        <CardContent>
+            <div className="grid gap-4">
+            <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                <Label htmlFor="handle">Handle</Label>
+                <Input id="handle" placeholder="cricketfan" required value={handle} onChange={(e) => setHandle(e.target.value)} disabled={isLoading} />
+                </div>
+                <div className="grid gap-2">
+                <Label htmlFor="role">Role</Label>
+                <Input id="role" placeholder="user" disabled value="user" />
+                </div>
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="role">Role</Label>
-              <Input id="role" placeholder="user" disabled value="user" />
+                <Label htmlFor="email">Email</Label>
+                <Input id="email" type="email" placeholder="m@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} disabled={isLoading} />
             </div>
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" placeholder="m@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="password">Password</Label>
-            <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
-          </div>
-          <div className="flex items-center space-x-2">
-              <Checkbox id="age-gate" required />
-              <Label htmlFor="age-gate" className="text-sm font-normal text-muted-foreground">
-                I confirm that I am over 18 years old.
-              </Label>
-          </div>
-          <Button onClick={handleSignup} className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
-            Create an account
-          </Button>
-          <Button variant="outline" className="w-full">
-            <GoogleIcon className="mr-2 h-4 w-4" />
-            Sign up with Google
-          </Button>
-        </div>
-        <div className="mt-4 text-center text-sm">
-          Already have an account?{' '}
-          <Link href="/login" className="underline">
-            Login
-          </Link>
-        </div>
-      </CardContent>
-    </Card>
+            <div className="grid gap-2">
+                <Label htmlFor="password">Password</Label>
+                <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} disabled={isLoading} />
+            </div>
+            <div className="flex items-center space-x-2">
+                <Checkbox id="age-gate" required />
+                <Label htmlFor="age-gate" className="text-sm font-normal text-muted-foreground">
+                    I confirm that I am over 18 years old.
+                </Label>
+            </div>
+            <Button onClick={handleSignup} className="w-full bg-primary text-primary-foreground hover:bg-primary/90" disabled={isLoading}>
+                {isLoading ? 'Creating account...' : 'Create an account'}
+            </Button>
+            <Button variant="outline" className="w-full" disabled={isLoading}>
+                <GoogleIcon className="mr-2 h-4 w-4" />
+                Sign up with Google
+            </Button>
+            </div>
+            <div className="mt-4 text-center text-sm">
+            Already have an account?{' '}
+            <Link href="/login" className="underline">
+                Login
+            </Link>
+            </div>
+        </CardContent>
+        </Card>
+    </div>
   );
 }
